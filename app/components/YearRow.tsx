@@ -24,9 +24,9 @@ const YearRow: React.FC<YearRowProps> = ({
   const sortedData = data.sort((a, b) => a.month - b.month);
   
   return (
-    <div className="my-4 min-h-10">    
+    <div className="my-4">
     <div className="grid grid-cols-4 gap-4">
-    <h3 className="text-xl font-semibold w-full">{year}</h3>
+    <h3 className="text-l font-semibold w-full text-shadow-xs">{Number(year) - 621}</h3>
       {sortedData.map((stat) => (
         <div key={stat.month} className="w-full">
           <BubbleCircle

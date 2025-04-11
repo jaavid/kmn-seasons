@@ -25,17 +25,18 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
   return (
     <div className="flex justify-center gap-2">
       <div
-        className="flex items-center justify-center rounded-full bg-green-300 text-sm font-light text-white shadow"
+        className="flex items-center justify-center rounded-full bg-green-300 text-sm font-light text-white "
         style={{ width: postSize, height: postSize }}
       >
         {stat.posts}
       </div>
+      {/* <br />
       <div
-        className="flex items-center justify-center rounded-full bg-blue-300 text-sm font-light text-white shadow"
+        className="flex items-center justify-center rounded-full bg-blue-300 text-sm font-light text-white "
         style={{ width: commentSize, height: commentSize }}
       >
         {stat.comments}
-      </div>
+      </div> */}
     </div>
   );
 };

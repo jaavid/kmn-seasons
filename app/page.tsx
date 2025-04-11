@@ -32,31 +32,11 @@ export default async function HomePage() {
   const seasonOrder = ['spring', 'summer', 'autumn', 'winter'];
 
   return (
-    // <div
-    //   className="season-grid"
-    //   style={{
-    //     display: 'grid',
-    //     gridTemplateColumns: 'repeat(2, 1fr)',
-    //     gap: '20px',
-    //   }}
-    // >
-    //   {seasonOrder.map((season) => {
-    //     if (!seasons[season]) return null;
-    //     return (
-    //       <SeasonCard
-    //         key={season}
-    //         season={season}
-    //         data={seasons[season]}
-    //         minPosts={minPosts}
-    //         maxPosts={maxPosts}
-    //         minComments={minComments}
-    //         maxComments={maxComments}
-    //       />
-    //     );
-    //   })}
-    // </div>
+
     <div className="container mx-auto p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-6"> */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-screen p-4 overflow-auto">
+  
         {seasonOrder.map((season) => {
           if (!seasons[season]) return null;
           return (
