@@ -2,11 +2,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 
-const YEARS: number[] = Array.from(
-  { length: 2025 - 2016 + 1 },
-  (_, i) => 2025 - i
-);
-
 type Post = {
   post_id: string;
   post_title: string;
@@ -21,11 +16,12 @@ type DataByYear = {
 
 export function useTopSeasonalPosts(
   season: string,
+  availableYears: number[],
   initialYearCount: number = 2
 ) {
   const [dataByYear, setDataByYear] = useState<DataByYear>({});
   const [currentYearIndex, setCurrentYearIndex] = useState<number>(
-    initialYearCount - 1
+    Math.min(initialYearCount, availableYears.length) - 1
   );
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -36,11 +32,7 @@ export function useTopSeasonalPosts(
         const res = await fetch(
           `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
         );
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const json: Post[] = await res.json();
         setDataByYear((prev) => ({ ...prev, [year]: json }));
       } catch (err: unknown) {
@@ -53,46 +45,47 @@ export function useTopSeasonalPosts(
     [season]
   );
 
-  // ✅ وقتی فصل تغییر می‌کنه: ریست همه‌ی داده‌ها
+  // Reset on season change
   useEffect(() => {
     setDataByYear({});
-    setCurrentYearIndex(initialYearCount - 1);
-  }, [season, initialYearCount]);
+    setCurrentYearIndex(Math.min(initialYearCount, availableYears.length) - 1);
+  }, [season, availableYears, initialYearCount]);
 
   useEffect(() => {
-    if (currentYearIndex < YEARS.length) {
-      const year: number = YEARS[currentYearIndex];
+    if (currentYearIndex < availableYears.length) {
+      const year = availableYears[currentYearIndex];
       if (!dataByYear[year]) {
         fetchDataForYear(year);
       }
     }
-  }, [currentYearIndex, dataByYear, fetchDataForYear]);
+  }, [currentYearIndex, dataByYear, fetchDataForYear, availableYears]);
 
   const loadMore = () => {
-    if (currentYearIndex < YEARS.length - 1) {
+    if (currentYearIndex < availableYears.length - 1) {
       setCurrentYearIndex((prev) => prev + 1);
     }
   };
 
   return {
     dataByYear,
-    yearsShown: YEARS.slice(0, currentYearIndex + 1),
-    canLoadMore: currentYearIndex < YEARS.length - 1,
+    yearsShown: availableYears.slice(0, currentYearIndex + 1),
+    canLoadMore: currentYearIndex < availableYears.length - 1,
     loadMore,
     loading,
   };
 }
 
-
 export function TopSeasonalPosts({
   season,
+  availableYears,
   initialYearCount = 2,
 }: {
   season: string;
+  availableYears: number[];
   initialYearCount?: number;
 }) {
   const { dataByYear, yearsShown, canLoadMore, loadMore, loading } =
-    useTopSeasonalPosts(season, initialYearCount);
+    useTopSeasonalPosts(season, availableYears, initialYearCount);
 
   return (
     <div className="space-y-10">
@@ -123,17 +116,14 @@ export function TopSeasonalPosts({
                       height={160}
                       className="w-full h-40 object-cover"
                     />
-                    {/* پوشش متن روی عکس */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white p-3 text-right">
                       <p className="text-sm font-semibold leading-tight">
                         {post.post_title}
                       </p>
                     </div>
-                    {/* تعداد بازدید */}
                     <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
                       👁️ {viewsFormatted}
                     </div>
-                    {/* تعداد کامنت */}
                     {commentCount > 0 && (
                       <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
                         💬 {commentsFormatted}

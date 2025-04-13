@@ -73,6 +73,10 @@ const PageClient = () => {
     return <div className="text-center py-10">در حال بارگذاری...</div>;
   }
 
+  const availableYears = Array.from(
+    new Set(stats.filter((s) => s.season === season).map((s) => parseInt(s.year)))
+  ).sort((a, b) => b - a);
+
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col relative">
       {/* لایه‌ی محو و بک‌گراند */}
@@ -130,8 +134,8 @@ const PageClient = () => {
             maxViews={maxViews}
           />
         </div>
-        <div>
-          <TopSeasonalPosts season={season} initialYearCount={1} />
+        <div>          
+          <TopSeasonalPosts season={season} availableYears={availableYears} initialYearCount={1} />
         </div>
       </div>
     </div>
