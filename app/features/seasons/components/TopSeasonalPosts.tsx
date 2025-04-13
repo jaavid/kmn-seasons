@@ -53,6 +53,12 @@ export function useTopSeasonalPosts(
     [season]
   );
 
+  // ✅ وقتی فصل تغییر می‌کنه: ریست همه‌ی داده‌ها
+  useEffect(() => {
+    setDataByYear({});
+    setCurrentYearIndex(initialYearCount - 1);
+  }, [season, initialYearCount]);
+
   useEffect(() => {
     if (currentYearIndex < YEARS.length) {
       const year: number = YEARS[currentYearIndex];
@@ -76,6 +82,7 @@ export function useTopSeasonalPosts(
     loading,
   };
 }
+
 
 export function TopSeasonalPosts({
   season,
