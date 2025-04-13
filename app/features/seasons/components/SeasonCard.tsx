@@ -1,7 +1,7 @@
 // components/SeasonCard.tsx
 import React from "react";
-import YearRow from "./YearRow";
-import { SeasonStats } from "../utils/flattenStats";
+import YearRow from "@/components/charts/YearRow";
+import { SeasonStats } from "@/features/seasons/utils/transformSeasonStats";
 
 type SeasonCardProps = {
   season: string;

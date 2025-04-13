@@ -1,7 +1,10 @@
-'use client'; // چون این کامپوننت از useState و fetch client-side استفاده می‌کنه
+"use client";
 import React, { useEffect, useState } from "react";
 
-const YEARS: number[] = Array.from({ length: 2025 - 2016 + 1 }, (_, i) => 2025 - i);
+const YEARS: number[] = Array.from(
+  { length: 2025 - 2016 + 1 },
+  (_, i) => 2025 - i
+);
 
 type Post = {
   post_id: string;
@@ -15,15 +18,20 @@ type DataByYear = {
   [year: number]: Post[];
 };
 
-export function useTopSeasonalPosts(season: string) {
+export function useTopSeasonalPosts(
+  season: string,
+  initialYearCount: number = 2
+) {
   const [dataByYear, setDataByYear] = useState<DataByYear>({});
-  const [currentYearIndex, setCurrentYearIndex] = useState<number>(0);
+  const [currentYearIndex, setCurrentYearIndex] = useState<number>(
+    initialYearCount - 1
+  );
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setDataByYear({});
-    setCurrentYearIndex(0);
-  }, [season]);
+    setCurrentYearIndex(initialYearCount - 1);
+  }, [season, initialYearCount]);
 
   useEffect(() => {
     if (currentYearIndex < YEARS.length) {
@@ -64,20 +72,30 @@ export function useTopSeasonalPosts(season: string) {
   };
 }
 
-export function TopSeasonalPosts({ season }: { season: string }) {
+export function TopSeasonalPosts({
+  season,
+  initialYearCount = 2,
+}: {
+  season: string;
+  initialYearCount?: number;
+}) {
   const { dataByYear, yearsShown, canLoadMore, loadMore, loading } =
-    useTopSeasonalPosts(season);
+    useTopSeasonalPosts(season, initialYearCount);
 
   return (
     <div className="space-y-10">
       {yearsShown.map((year) => {
-        const jalaliYear = (year - 621).toLocaleString("fa-IR", { useGrouping: false });
+        const jalaliYear = (year - 621).toLocaleString("fa-IR", {
+          useGrouping: false,
+        });
         return (
           <div key={year}>
             <h2 className="text-xl font-bold mb-4">سال {jalaliYear}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {(dataByYear[year] || []).map((post) => {
-                const viewsFormatted = Number(post.total_views).toLocaleString("fa-IR");
+                const viewsFormatted = Number(post.total_views).toLocaleString(
+                  "fa-IR"
+                );
                 const commentCount = Number(post.comment_count);
                 const commentsFormatted = commentCount.toLocaleString("fa-IR");
 

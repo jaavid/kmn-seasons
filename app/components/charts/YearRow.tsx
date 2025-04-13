@@ -1,7 +1,7 @@
 // components/YearRow.tsx
 import React from 'react';
-import BubbleCircle from './BubbleCircle';
-import { SeasonStats } from '../utils/flattenStats';
+import BubbleCircle from '@/components/ui/BubbleCircle';
+import { SeasonStats } from '@/features/seasons/utils/transformSeasonStats';
 
 type YearRowProps = {
   year: string;
