@@ -23,9 +23,6 @@ const PageClient = () => {
   const [stats, setStats] = useState<SeasonStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSeasonIndex, setCurrentSeasonIndex] = useState(0);
-  const [visibleYearsBySeason, setVisibleYearsBySeason] = useState<
-    Record<string, number>
-  >(Object.fromEntries(seasonOrder.map((season) => [season, 2])));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,13 +70,6 @@ const PageClient = () => {
   } else if (season === "winter") {
     backgroundImage = "/seasons/winter.png";
   }
-
-  const loadMoreYears = () => {
-    setVisibleYearsBySeason((prev) => ({
-      ...prev,
-      [season]: (prev[season] || 2) + 1,
-    }));
-  };
 
   if (loading) {
     return <div className="text-center py-10">در حال بارگذاری...</div>;

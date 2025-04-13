@@ -1,9 +1,10 @@
 // app/hooks/useTopPosts.ts
 import { useEffect, useState } from 'react';
-import axios from '../lib/axios';
+import axios from '@/lib/axios';
+import { Post } from '@/types';
 
 export const useTopPosts = (season: string, year: number) => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 

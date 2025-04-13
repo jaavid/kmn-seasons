@@ -1,6 +1,9 @@
 ================================================================
 Files Structure
 ================================================================
+.github/
+  workflows/
+    static.yml
 app/
   components/
     charts/
@@ -44,6 +47,62 @@ tsconfig.json
 ================================================================
 Repository Files
 ================================================================
+
+================
+File: .github/workflows/static.yml
+================
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: '*'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './'
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload dist repository
+          path: './docs'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
 ================
 File: app/components/charts/YearRow.tsx
@@ -225,32 +284,6 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     yearPairs.push([years[i], years[i + 1]]);
   }
 
-  // تعریف mapping فصل به ماه‌های مربوطه (مثلاً فصل‌های شمسی)
-  const seasonMonthMapping: { [key: string]: number[] } = {
-    spring: [1, 2, 3],
-    summer: [4, 5, 6],
-    autumn: [7, 8, 9],
-    winter: [10, 11, 12],
-  };
-  const months = seasonMonthMapping[season] || [];
-
-  // mapping شماره ماه به نام شمسی
-  const jalaliMonthNames: { [key: number]: string } = {
-    1: "فروردین",
-    2: "اردیبهشت",
-    3: "خرداد",
-    4: "تیر",
-    5: "مرداد",
-    6: "شهریور",
-    7: "مهر",
-    8: "آبان",
-    9: "آذر",
-    10: "دی",
-    11: "بهمن",
-    12: "اسفند",
-  };
-
-
   // مسیر تصاویر بک‌گراند برای هر فصل
   let backgroundImage = "/seasons/spring.png";
   if (season === "summer") {
@@ -300,7 +333,8 @@ export default SeasonCard;
 File: app/features/seasons/components/TopSeasonalPosts.tsx
 ================
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 
 const YEARS: number[] = Array.from(
   { length: 2025 - 2016 + 1 },
@@ -329,10 +363,29 @@ export function useTopSeasonalPosts(
   );
   const [loading, setLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    setDataByYear({});
-    setCurrentYearIndex(initialYearCount - 1);
-  }, [season, initialYearCount]);
+  const fetchDataForYear = useCallback(
+    async (year: number) => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
+        );
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const json: Post[] = await res.json();
+        setDataByYear((prev) => ({ ...prev, [year]: json }));
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error("Error fetching data:", error.message);
+        setDataByYear((prev) => ({ ...prev, [year]: [] }));
+      }
+      setLoading(false);
+    },
+    [season]
+  );
 
   useEffect(() => {
     if (currentYearIndex < YEARS.length) {
@@ -341,22 +394,7 @@ export function useTopSeasonalPosts(
         fetchDataForYear(year);
       }
     }
-  }, [currentYearIndex, dataByYear]);
-
-  const fetchDataForYear = async (year: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
-      );
-      const json: Post[] = await res.json();
-      setDataByYear((prev) => ({ ...prev, [year]: json }));
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setDataByYear((prev) => ({ ...prev, [year]: [] }));
-    }
-    setLoading(false);
-  };
+  }, [currentYearIndex, dataByYear, fetchDataForYear]);
 
   const loadMore = () => {
     if (currentYearIndex < YEARS.length - 1) {
@@ -405,9 +443,11 @@ export function TopSeasonalPosts({
                     key={post.post_id}
                     className="relative rounded-2xl overflow-hidden shadow-sm group"
                   >
-                    <img
+                    <Image
                       src={post.thumbnail_url}
                       alt={post.post_title}
+                      width={400}
+                      height={160}
                       className="w-full h-40 object-cover"
                     />
                     {/* پوشش متن روی عکس */}
@@ -454,7 +494,7 @@ File: app/features/seasons/hooks/useSeasonStats.ts
 ================
 // app/hooks/useSeasonData.ts
 import { useEffect, useState } from 'react';
-import axios from '../lib/axios';
+import axios from '@/lib/axios';
 
 export const useSeasonData = (season: string) => {
   const [data, setData] = useState<any[]>([]);
@@ -486,7 +526,7 @@ File: app/features/seasons/hooks/useTopPosts.ts
 ================
 // app/hooks/useTopPosts.ts
 import { useEffect, useState } from 'react';
-import axios from '../lib/axios';
+import axios from '@/lib/axios';
 
 export const useTopPosts = (season: string, year: number) => {
   const [data, setData] = useState<any[]>([]);
@@ -537,7 +577,7 @@ export type SeasonStats = {
     month: number;
     posts: number;
     comments: number;
-    views: number; // ✅ اضافه کن
+    views: number;
   };
   
   export const flattenStats = (data: any): SeasonStats[] => {
@@ -586,7 +626,6 @@ export const API_BASE_URL = 'https://kermaneno.ir/wp-json/seasons/v1';
 ================
 File: app/pages/SeasonsPage.tsx
 ================
-// app/pages/PageClient.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -612,9 +651,6 @@ const PageClient = () => {
   const [stats, setStats] = useState<SeasonStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSeasonIndex, setCurrentSeasonIndex] = useState(0);
-  const [visibleYearsBySeason, setVisibleYearsBySeason] = useState<
-    Record<string, number>
-  >(Object.fromEntries(seasonOrder.map((season) => [season, 2])));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -654,7 +690,6 @@ const PageClient = () => {
     preventScrollOnSwipe: true,
   });
 
-  // مسیر تصاویر بک‌گراند برای هر فصل
   let backgroundImage = "/seasons/spring.png";
   if (season === "summer") {
     backgroundImage = "/seasons/summer.png";
@@ -664,19 +699,35 @@ const PageClient = () => {
     backgroundImage = "/seasons/winter.png";
   }
 
-  const loadMoreYears = () => {
-    setVisibleYearsBySeason((prev) => ({
-      ...prev,
-      [season]: (prev[season] || 2) + 1,
-    }));
-  };
-
   if (loading) {
     return <div className="text-center py-10">در حال بارگذاری...</div>;
   }
 
   return (
-    <div className="w-full h-screen overflow-hidden flex flex-col">
+    <div className="w-full h-screen overflow-hidden flex flex-col relative">
+      {/* لایه‌ی محو و بک‌گراند */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={season}
+          {...swipeHandlers}
+          className="absolute inset-0 z-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          ></div>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
+        </motion.div>
+      </AnimatePresence>
+
       {/* انتخاب فصل */}
       <div className="flex justify-center gap-2 p-4 bg-white/60 z-10 backdrop-blur-md">
         {seasonOrder.map((s, idx) => (
@@ -695,44 +746,24 @@ const PageClient = () => {
         ))}
       </div>
 
-      {/* نمایش فصل */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          {...swipeHandlers}
-          key={season}
-          className="h-full w-full overflow-hidden"
-          initial={{ rotateY: 90, opacity: 0 }}
-          animate={{ rotateY: 0, opacity: 1 }}
-          exit={{ rotateY: -90, opacity: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <div
-            className="h-full overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/50 backdrop-blur-sm p-4"
-            style={{
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
-            <div className="space-y-4">
-              <SeasonCard
-                season={season}
-                data={seasonData}
-                minPosts={minPosts}
-                maxPosts={maxPosts}
-                minComments={minComments}
-                maxComments={maxComments}
-                minViews={minViews}
-                maxViews={maxViews}
-              />
-            </div>
-            <div>
-<TopSeasonalPosts season={season} initialYearCount={2} />
-            </div>            
-          </div>
-        </motion.div>
-      </AnimatePresence>
+      {/* محتوای اصلی */}
+      <div className="relative z-20 h-full w-full flex flex-col md:flex-row items-center justify-center gap-6 p-4">
+        <div className="space-y-4">
+          <SeasonCard
+            season={season}
+            data={seasonData}
+            minPosts={minPosts}
+            maxPosts={maxPosts}
+            minComments={minComments}
+            maxComments={maxComments}
+            minViews={minViews}
+            maxViews={maxViews}
+          />
+        </div>
+        <div>
+          <TopSeasonalPosts season={season} initialYearCount={1} />
+        </div>
+      </div>
     </div>
   );
 };
@@ -912,6 +943,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "export",
+  images: {
+    unoptimized: true,
+    domains: ["kermaneno.ir"],
+  },
+  // basePath: "/", 
 };
 
 export default nextConfig;

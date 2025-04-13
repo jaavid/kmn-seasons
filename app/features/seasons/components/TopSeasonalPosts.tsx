@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 
 const YEARS: number[] = Array.from(
   { length: 2025 - 2016 + 1 },
@@ -28,10 +29,29 @@ export function useTopSeasonalPosts(
   );
   const [loading, setLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    setDataByYear({});
-    setCurrentYearIndex(initialYearCount - 1);
-  }, [season, initialYearCount]);
+  const fetchDataForYear = useCallback(
+    async (year: number) => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
+        );
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const json: Post[] = await res.json();
+        setDataByYear((prev) => ({ ...prev, [year]: json }));
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error("Error fetching data:", error.message);
+        setDataByYear((prev) => ({ ...prev, [year]: [] }));
+      }
+      setLoading(false);
+    },
+    [season]
+  );
 
   useEffect(() => {
     if (currentYearIndex < YEARS.length) {
@@ -40,22 +60,7 @@ export function useTopSeasonalPosts(
         fetchDataForYear(year);
       }
     }
-  }, [currentYearIndex, dataByYear]);
-
-  const fetchDataForYear = async (year: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
-      );
-      const json: Post[] = await res.json();
-      setDataByYear((prev) => ({ ...prev, [year]: json }));
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setDataByYear((prev) => ({ ...prev, [year]: [] }));
-    }
-    setLoading(false);
-  };
+  }, [currentYearIndex, dataByYear, fetchDataForYear]);
 
   const loadMore = () => {
     if (currentYearIndex < YEARS.length - 1) {
@@ -104,9 +109,11 @@ export function TopSeasonalPosts({
                     key={post.post_id}
                     className="relative rounded-2xl overflow-hidden shadow-sm group"
                   >
-                    <img
+                    <Image
                       src={post.thumbnail_url}
                       alt={post.post_title}
+                      width={400}
+                      height={160}
                       className="w-full h-40 object-cover"
                     />
                     {/* پوشش متن روی عکس */}
