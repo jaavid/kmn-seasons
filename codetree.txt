@@ -60,6 +60,8 @@ type YearRowProps = {
   maxPosts: number;
   minComments: number;
   maxComments: number;
+  minViews: number;
+  maxViews: number;
 };
 
 const YearRow: React.FC<YearRowProps> = ({
@@ -69,6 +71,8 @@ const YearRow: React.FC<YearRowProps> = ({
   maxPosts,
   minComments,
   maxComments,
+  minViews,
+  maxViews
 }) => {
   // مرتب‌سازی داده‌ها بر اساس شماره ماه
   const sortedData = data.sort((a, b) => a.month - b.month);
@@ -85,6 +89,8 @@ const YearRow: React.FC<YearRowProps> = ({
             maxPosts={maxPosts}
             minComments={minComments}
             maxComments={maxComments}
+            minViews={minViews}
+            maxViews={maxViews}
           />
         </div>
       ))}
@@ -98,7 +104,6 @@ export default YearRow;
 ================
 File: app/components/ui/BubbleCircle.tsx
 ================
-// components/BubbleCircle.tsx
 import React from 'react';
 import { normalize } from '@/features/seasons/utils/normalizeBubbleSize';
 import { SeasonStats } from '@/features/seasons/utils/transformSeasonStats';
@@ -109,13 +114,15 @@ type BubbleCircleProps = {
   maxPosts: number;
   minComments: number;
   maxComments: number;
+  minViews: number;
+  maxViews: number;
 };
 
-const seasonColors: Record<string, { post: string; comment: string }> = {
-  spring: { post: 'bg-green-300', comment: 'bg-green-500' },
-  summer: { post: 'bg-yellow-300', comment: 'bg-yellow-500' },
-  autumn: { post: 'bg-orange-300', comment: 'bg-orange-500' },
-  winter: { post: 'bg-blue-300', comment: 'bg-blue-500' },
+const seasonColors: Record<string, { post: string; comment: string; view: string }> = {
+  spring: { post: 'bg-green-300', comment: 'bg-green-500', view: 'bg-green-700' },
+  summer: { post: 'bg-yellow-300', comment: 'bg-yellow-500', view: 'bg-yellow-700' },
+  autumn: { post: 'bg-orange-300', comment: 'bg-orange-500', view: 'bg-orange-700' },
+  winter: { post: 'bg-blue-300', comment: 'bg-blue-500', view: 'bg-blue-700' },
 };
 
 const BubbleCircle: React.FC<BubbleCircleProps> = ({
@@ -124,32 +131,56 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
   maxPosts,
   minComments,
   maxComments,
+  minViews,
+  maxViews,
 }) => {
   const postSize = normalize(stat.posts, minPosts, maxPosts);
   const commentSize = normalize(stat.comments, minComments, maxComments);
-  const season = stat.season;
-  const colors = seasonColors[season] || { post: 'bg-gray-300', comment: 'bg-gray-500' };
+  const viewSize = normalize(stat.views, minViews, maxViews);
+
+  const colors = seasonColors[stat.season] || {
+    post: 'bg-gray-300',
+    comment: 'bg-gray-500',
+    view: 'bg-gray-700',
+  };
 
   return (
     <div className="flex justify-center gap-2">
       {/* دایره پست‌ها */}
-      <div
-        className={`relative group flex items-center justify-center rounded-full text-sm font-light text-white ${colors.post}`}
-        style={{ width: postSize, height: postSize }}
-      >
-        {stat.posts}
-        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-          خبر: {stat.posts} <br /> نظر: {stat.comments}
+      {stat.posts > 0 && (
+        <div
+          className={`relative group rounded-full opacity-70 shadow-md ${colors.post}`}
+          style={{ width: postSize, height: postSize }}
+        >
+          <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+            {stat.posts.toLocaleString("fa-IR")} خبر
+          </div>
         </div>
-      </div>
+      )}
 
       {/* دایره دیدگاه‌ها */}
-      <div
-        className={`flex items-center justify-center rounded-full text-sm font-light text-white ${colors.comment}`}
-        style={{ width: commentSize, height: commentSize }}
-      >
-        {stat.comments}
-      </div>
+      {stat.comments > 0 && (
+        <div
+          className={`relative group rounded-full opacity-70 shadow-md ${colors.comment}`}
+          style={{ width: commentSize, height: commentSize }}
+        >
+          <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+            {stat.comments.toLocaleString("fa-IR")} نظر
+          </div>
+        </div>
+      )}
+
+      {/* دایره بازدیدها */}
+      {stat.views > 0 && (
+        <div
+          className={`relative group rounded-full opacity-70 shadow-md ${colors.view}`}
+          style={{ width: viewSize, height: viewSize }}
+        >
+          <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+            {stat.views.toLocaleString("fa-IR")} مشاهده
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -171,6 +202,8 @@ type SeasonCardProps = {
   maxPosts: number;
   minComments: number;
   maxComments: number;
+  minViews: number;
+  maxViews: number;
 };
 
 const SeasonCard: React.FC<SeasonCardProps> = ({
@@ -180,10 +213,9 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
   maxPosts,
   minComments,
   maxComments,
+  minViews,
+  maxViews
 }) => {
-  // گروه‌بندی داده‌ها بر اساس سال
-  // const years = Array.from(new Set(data.map((stat) => stat.year)));
-  // const years = Array.from(new Set(data.map((stat) => stat.year))).sort((a, b) => b - a);
   const years = Array.from(new Set(data.map((stat) => stat.year))).sort(
     (a, b) => Number(b) - Number(a)
   );
@@ -218,19 +250,6 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     12: "اسفند",
   };
 
-  // رنگ پس‌زمینه و آیکون مربوط به فصل
-  let seasonBg = "bg-green-50";
-  let iconPath = "/icons/spring.png";
-  if (season === "summer") {
-    seasonBg = "bg-yellow-50";
-    iconPath = "/icons/summer.png";
-  } else if (season === "autumn") {
-    seasonBg = "bg-orange-50";
-    iconPath = "/icons/autumn.png";
-  } else if (season === "winter") {
-    seasonBg = "bg-blue-50";
-    iconPath = "/icons/winter.png";
-  }
 
   // مسیر تصاویر بک‌گراند برای هر فصل
   let backgroundImage = "/seasons/spring.png";
@@ -242,80 +261,12 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     backgroundImage = "/seasons/winter.png";
   }
 
-  //   return (
-  //     <div className={`relative p-6 rounded-xl shadow-lg ${seasonBg}`}>
-  //       {/* آیکون فصل در گوشه بالا */}
-  //       <div className="absolute top-4 right-4 opacity-40">
-  //         <img src={iconPath} alt={season} className="w-16 h-16" />
-  //       </div>
-  //       {/* <h2 className="text-3xl font-bold text-center capitalize mb-4">{season}</h2> */}
-
-  //       {/* هدر ماه‌ها (یکبار نمایش داده می‌شود) */}
-  //       <div className="grid grid-cols-4 gap-4 mb-4 border-b pb-2">
-  //       <div className="h-full" aria-hidden="true"></div>
-  //         {months.map((month) => (
-  //           <div key={month} className="text-center font-medium text-gray-700">
-  //             {jalaliMonthNames[month]}
-  //           </div>
-  //         ))}
-  //       </div>
-
-  //       {/* ردیف‌های سال */}
-  //       {years.map((year) => {
-  //         // فیلتر داده‌های مربوط به آن سال
-  //         const yearData = data.filter((stat) => stat.year === year);
-  //         return (
-  //           <YearRow
-  //             key={year}
-  //             year={year}
-  //             data={yearData}
-  //             // months={months}
-  //             minPosts={minPosts}
-  //             maxPosts={maxPosts}
-  //             minComments={minComments}
-  //             maxComments={maxComments}
-  //           />
-  //         );
-  //       })}
-  //     </div>
-  //   );
-  // };
-
   return (
     <div
       className="relative p-6 rounded-xl shadow-lg text-white bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
-      {/* لایه مشکی نیمه‌شفاف برای خوانایی بهتر */}
-      {/* <div className="absolute inset-0 bg-black/40 z-0 rounded-xl" /> */}
-      {/* محتوای اصلی */}
       <div className="relative z-10">
-        {/* هدر ماه‌ها */}
-        {/* <div className="grid grid-cols-4 gap-4 mb-4 border-b border-white/30 pb-2">
-          <div className="h-full" aria-hidden="true"></div>
-          {months.map((month) => (
-            <div key={month} className="text-center font-medium">
-              {jalaliMonthNames[month]}
-            </div>
-          ))}
-        </div> */}
-
-        {/* ردیف‌های سال */}
-        {/* {years.map((year) => {
-          const yearData = data.filter((stat) => stat.year === year);
-          return (
-            <YearRow
-              key={year}
-              year={year}
-              data={yearData}
-              minPosts={minPosts}
-              maxPosts={maxPosts}
-              minComments={minComments}
-              maxComments={maxComments}
-            />
-          );
-        })} */}
-
         <div className="space-y-4">
           {yearPairs.map((pair, index) => (
             <div key={index} className="grid grid-cols-2 gap-4">
@@ -331,6 +282,8 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
                     maxPosts={maxPosts}
                     minComments={minComments}
                     maxComments={maxComments}
+                    maxViews={maxViews}
+                    minViews={minViews}
                   />
                 );
               })}
@@ -564,14 +517,15 @@ File: app/features/seasons/utils/normalizeBubbleSize.ts
 ================
 // utils/normalize.ts
 export const normalize = (
-    value: number,
-    min: number,
-    max: number,
-    minSize = 10,
-    maxSize = 60
-  ): number => {
-    return ((value - min) / (max - min)) * (maxSize - minSize) + minSize;
-  };
+  value: number,
+  min: number,
+  max: number,
+  minSize = 10,
+  maxSize = 60
+): number => {
+  if (max === min) return (minSize + maxSize) / 2;
+  return ((value - min) / (max - min)) * (maxSize - minSize) + minSize;
+};
 
 ================
 File: app/features/seasons/utils/transformSeasonStats.ts
@@ -583,6 +537,7 @@ export type SeasonStats = {
     month: number;
     posts: number;
     comments: number;
+    views: number; // ✅ اضافه کن
   };
   
   export const flattenStats = (data: any): SeasonStats[] => {
@@ -599,6 +554,7 @@ export type SeasonStats = {
             month: parseInt(month, 10),
             posts: stat.posts,
             comments: stat.comments,
+            views: stat.views,
           });
         }
       }
@@ -631,40 +587,43 @@ export const API_BASE_URL = 'https://kermaneno.ir/wp-json/seasons/v1';
 File: app/pages/SeasonsPage.tsx
 ================
 // app/pages/PageClient.tsx
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSwipeable } from 'react-swipeable';
-import SeasonCard from '../features/seasons/components/SeasonCard';
-import { TopSeasonalPosts } from '../features/seasons/components/TopSeasonalPosts';
-import { flattenStats, SeasonStats } from '../features/seasons/utils/transformSeasonStats';
-import axios from '@/lib/axios';
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSwipeable } from "react-swipeable";
+import SeasonCard from "../features/seasons/components/SeasonCard";
+import { TopSeasonalPosts } from "../features/seasons/components/TopSeasonalPosts";
+import {
+  flattenStats,
+  SeasonStats,
+} from "../features/seasons/utils/transformSeasonStats";
+import axios from "@/lib/axios";
 
-const seasonOrder = ['spring', 'summer', 'autumn', 'winter'];
+const seasonOrder = ["spring", "summer", "autumn", "winter"];
 const seasonLabels: Record<string, string> = {
-  spring: '🌸 بهار',
-  summer: '☀️ تابستان',
-  autumn: '🍁 پاییز',
-  winter: '❄️ زمستان',
+  spring: "🌸 بهار",
+  summer: "☀️ تابستان",
+  autumn: "🍁 پاییز",
+  winter: "❄️ زمستان",
 };
 
 const PageClient = () => {
   const [stats, setStats] = useState<SeasonStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSeasonIndex, setCurrentSeasonIndex] = useState(0);
-  const [visibleYearsBySeason, setVisibleYearsBySeason] = useState<Record<string, number>>(
-    Object.fromEntries(seasonOrder.map((season) => [season, 2]))
-  );
+  const [visibleYearsBySeason, setVisibleYearsBySeason] = useState<
+    Record<string, number>
+  >(Object.fromEntries(seasonOrder.map((season) => [season, 2])));
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('/stats');
+        const res = await axios.get("/stats");
         setStats(flattenStats(res.data));
       } catch (error) {
-        console.error('خطا در دریافت داده:', error);
+        console.error("خطا در دریافت داده:", error);
       }
       setLoading(false);
     };
@@ -680,19 +639,30 @@ const PageClient = () => {
   const maxPosts = Math.max(...postValues);
   const minComments = Math.min(...commentValues);
   const maxComments = Math.max(...commentValues);
+  const viewValues = stats.map((s) => s.views);
+  const minViews = Math.min(...viewValues);
+  const maxViews = Math.max(...viewValues);
 
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => setCurrentSeasonIndex((i) => (i + 1) % seasonOrder.length),
+    onSwipedLeft: () =>
+      setCurrentSeasonIndex((i) => (i + 1) % seasonOrder.length),
     onSwipedRight: () =>
-      setCurrentSeasonIndex((i) => (i - 1 + seasonOrder.length) % seasonOrder.length),
+      setCurrentSeasonIndex(
+        (i) => (i - 1 + seasonOrder.length) % seasonOrder.length
+      ),
     trackTouch: true,
-    // preventDefaultTouchmoveEvent: true,
-    preventScrollOnSwipe: true, // ✅ اینو استفاده کن
+    preventScrollOnSwipe: true,
   });
 
-  const visibleYearCount = visibleYearsBySeason[season];
-  const allYears = Array.from(new Set(seasonData.map((s) => s.year))).sort((a, b) => Number(b) - Number(a));
-  const visibleYears = allYears.slice(0, visibleYearCount);
+  // مسیر تصاویر بک‌گراند برای هر فصل
+  let backgroundImage = "/seasons/spring.png";
+  if (season === "summer") {
+    backgroundImage = "/seasons/summer.png";
+  } else if (season === "autumn") {
+    backgroundImage = "/seasons/autumn.png";
+  } else if (season === "winter") {
+    backgroundImage = "/seasons/winter.png";
+  }
 
   const loadMoreYears = () => {
     setVisibleYearsBySeason((prev) => ({
@@ -713,9 +683,11 @@ const PageClient = () => {
           <button
             key={s}
             className={`transition px-4 py-2 text-sm rounded-full font-bold shadow-sm
-              ${idx === currentSeasonIndex
-                ? 'bg-blue-700 text-white scale-105 shadow-md'
-                : 'bg-white text-gray-700 hover:bg-gray-200'}`}
+              ${
+                idx === currentSeasonIndex
+                  ? "bg-blue-700 text-white scale-105 shadow-md"
+                  : "bg-white text-gray-700 hover:bg-gray-200"
+              }`}
             onClick={() => setCurrentSeasonIndex(idx)}
           >
             {seasonLabels[s]}
@@ -734,7 +706,15 @@ const PageClient = () => {
           exit={{ rotateY: -90, opacity: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <div className="h-full overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/10 backdrop-blur-sm p-4">
+          <div
+            className="h-full overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/50 backdrop-blur-sm p-4"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
             <div className="space-y-4">
               <SeasonCard
                 season={season}
@@ -743,9 +723,13 @@ const PageClient = () => {
                 maxPosts={maxPosts}
                 minComments={minComments}
                 maxComments={maxComments}
+                minViews={minViews}
+                maxViews={maxViews}
               />
             </div>
-            <TopSeasonalPosts season={season} initialYearCount={2} />
+            <div>
+<TopSeasonalPosts season={season} initialYearCount={2} />
+            </div>            
           </div>
         </motion.div>
       </AnimatePresence>

@@ -5,6 +5,7 @@ export type SeasonStats = {
     month: number;
     posts: number;
     comments: number;
+    views: number; // ✅ اضافه کن
   };
   
   export const flattenStats = (data: any): SeasonStats[] => {
@@ -21,6 +22,7 @@ export type SeasonStats = {
             month: parseInt(month, 10),
             posts: stat.posts,
             comments: stat.comments,
+            views: stat.views,
           });
         }
       }

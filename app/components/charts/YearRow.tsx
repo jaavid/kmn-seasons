@@ -10,6 +10,8 @@ type YearRowProps = {
   maxPosts: number;
   minComments: number;
   maxComments: number;
+  minViews: number;
+  maxViews: number;
 };
 
 const YearRow: React.FC<YearRowProps> = ({
@@ -19,6 +21,8 @@ const YearRow: React.FC<YearRowProps> = ({
   maxPosts,
   minComments,
   maxComments,
+  minViews,
+  maxViews
 }) => {
   // مرتب‌سازی داده‌ها بر اساس شماره ماه
   const sortedData = data.sort((a, b) => a.month - b.month);
@@ -35,6 +39,8 @@ const YearRow: React.FC<YearRowProps> = ({
             maxPosts={maxPosts}
             minComments={minComments}
             maxComments={maxComments}
+            minViews={minViews}
+            maxViews={maxViews}
           />
         </div>
       ))}

@@ -10,6 +10,8 @@ type SeasonCardProps = {
   maxPosts: number;
   minComments: number;
   maxComments: number;
+  minViews: number;
+  maxViews: number;
 };
 
 const SeasonCard: React.FC<SeasonCardProps> = ({
@@ -19,10 +21,9 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
   maxPosts,
   minComments,
   maxComments,
+  minViews,
+  maxViews
 }) => {
-  // گروه‌بندی داده‌ها بر اساس سال
-  // const years = Array.from(new Set(data.map((stat) => stat.year)));
-  // const years = Array.from(new Set(data.map((stat) => stat.year))).sort((a, b) => b - a);
   const years = Array.from(new Set(data.map((stat) => stat.year))).sort(
     (a, b) => Number(b) - Number(a)
   );
@@ -57,19 +58,6 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     12: "اسفند",
   };
 
-  // رنگ پس‌زمینه و آیکون مربوط به فصل
-  let seasonBg = "bg-green-50";
-  let iconPath = "/icons/spring.png";
-  if (season === "summer") {
-    seasonBg = "bg-yellow-50";
-    iconPath = "/icons/summer.png";
-  } else if (season === "autumn") {
-    seasonBg = "bg-orange-50";
-    iconPath = "/icons/autumn.png";
-  } else if (season === "winter") {
-    seasonBg = "bg-blue-50";
-    iconPath = "/icons/winter.png";
-  }
 
   // مسیر تصاویر بک‌گراند برای هر فصل
   let backgroundImage = "/seasons/spring.png";
@@ -81,80 +69,12 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     backgroundImage = "/seasons/winter.png";
   }
 
-  //   return (
-  //     <div className={`relative p-6 rounded-xl shadow-lg ${seasonBg}`}>
-  //       {/* آیکون فصل در گوشه بالا */}
-  //       <div className="absolute top-4 right-4 opacity-40">
-  //         <img src={iconPath} alt={season} className="w-16 h-16" />
-  //       </div>
-  //       {/* <h2 className="text-3xl font-bold text-center capitalize mb-4">{season}</h2> */}
-
-  //       {/* هدر ماه‌ها (یکبار نمایش داده می‌شود) */}
-  //       <div className="grid grid-cols-4 gap-4 mb-4 border-b pb-2">
-  //       <div className="h-full" aria-hidden="true"></div>
-  //         {months.map((month) => (
-  //           <div key={month} className="text-center font-medium text-gray-700">
-  //             {jalaliMonthNames[month]}
-  //           </div>
-  //         ))}
-  //       </div>
-
-  //       {/* ردیف‌های سال */}
-  //       {years.map((year) => {
-  //         // فیلتر داده‌های مربوط به آن سال
-  //         const yearData = data.filter((stat) => stat.year === year);
-  //         return (
-  //           <YearRow
-  //             key={year}
-  //             year={year}
-  //             data={yearData}
-  //             // months={months}
-  //             minPosts={minPosts}
-  //             maxPosts={maxPosts}
-  //             minComments={minComments}
-  //             maxComments={maxComments}
-  //           />
-  //         );
-  //       })}
-  //     </div>
-  //   );
-  // };
-
   return (
     <div
       className="relative p-6 rounded-xl shadow-lg text-white bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
-      {/* لایه مشکی نیمه‌شفاف برای خوانایی بهتر */}
-      {/* <div className="absolute inset-0 bg-black/40 z-0 rounded-xl" /> */}
-      {/* محتوای اصلی */}
       <div className="relative z-10">
-        {/* هدر ماه‌ها */}
-        {/* <div className="grid grid-cols-4 gap-4 mb-4 border-b border-white/30 pb-2">
-          <div className="h-full" aria-hidden="true"></div>
-          {months.map((month) => (
-            <div key={month} className="text-center font-medium">
-              {jalaliMonthNames[month]}
-            </div>
-          ))}
-        </div> */}
-
-        {/* ردیف‌های سال */}
-        {/* {years.map((year) => {
-          const yearData = data.filter((stat) => stat.year === year);
-          return (
-            <YearRow
-              key={year}
-              year={year}
-              data={yearData}
-              minPosts={minPosts}
-              maxPosts={maxPosts}
-              minComments={minComments}
-              maxComments={maxComments}
-            />
-          );
-        })} */}
-
         <div className="space-y-4">
           {yearPairs.map((pair, index) => (
             <div key={index} className="grid grid-cols-2 gap-4">
@@ -170,6 +90,8 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
                     maxPosts={maxPosts}
                     minComments={minComments}
                     maxComments={maxComments}
+                    maxViews={maxViews}
+                    minViews={minViews}
                   />
                 );
               })}
