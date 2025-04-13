@@ -5,10 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import SeasonCard from "../features/seasons/components/SeasonCard";
 import { TopSeasonalPosts } from "../features/seasons/components/TopSeasonalPosts";
-import {
-  flattenStats,
-  SeasonStats,
-} from "../features/seasons/utils/transformSeasonStats";
+import {flattenStats} from "../features/seasons/utils/transformSeasonStats";
+import { SeasonStats } from '@/types/season';
 import axios from "@/lib/axios";
 
 const seasonOrder = ["spring", "summer", "autumn", "winter"];
