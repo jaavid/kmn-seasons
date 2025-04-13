@@ -143,7 +143,7 @@ const PageClient = () => {
           />
         </div>
         <div>
-          <TopSeasonalPosts season={season} initialYearCount={2} />
+          <TopSeasonalPosts season={season} initialYearCount={1} />
         </div>
       </div>
     </div>
