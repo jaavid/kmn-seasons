@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google"; // 👈 اضافه شده
 
-// import "./globals.css";
+import "./globals.css";
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
