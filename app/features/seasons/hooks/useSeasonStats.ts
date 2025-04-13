@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from '@/lib/axios';
 import { SeasonStats } from '@/types';
 
-export const useSeasonData = (season: string) => {
+export const useSeasonStats = () => {
   const [data, setData] = useState<SeasonStats[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,24 +13,28 @@ export const useSeasonData = (season: string) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get('/stats');
+        const res = await axios.get('/seasonStats');
         const filtered = res.data.filter((item: unknown): item is SeasonStats => {
           return (
             typeof item === 'object' &&
             item !== null &&
             'season' in item &&
-            (item as any).season === season
+            (item as SeasonStats).season !== undefined
           );
         });
         setData(filtered);
-      } catch (err: any) {
-        setError(err.message || 'خطا در دریافت داده');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'خطا در دریافت داده');
+        } else {
+          setError('خطای ناشناخته');
+        }
       }
       setLoading(false);
     };
 
     fetchData();
-  }, [season]);
+  }, []);
 
   return { data, loading, error };
 };

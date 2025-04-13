@@ -1,4 +1,3 @@
-// app/hooks/useTopPosts.ts
 import { useEffect, useState } from 'react';
 import axios from '@/lib/axios';
 import { Post } from '@/types';
@@ -15,8 +14,12 @@ export const useTopPosts = (season: string, year: number) => {
       try {
         const res = await axios.get(`/top/${season}/${year}`);
         setData(res.data);
-      } catch (err: any) {
-        setError(err.message || 'خطا در دریافت داده');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'خطا در دریافت داده');
+        } else {
+          setError('خطای ناشناخته');
+        }
       }
       setLoading(false);
     };
