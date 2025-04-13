@@ -99,7 +99,7 @@ const PageClient = () => {
       </AnimatePresence>
 
       {/* انتخاب فصل */}
-      <div className="flex justify-center gap-2 p-4 bg-white/60 z-10 backdrop-blur-md">
+      <div className="flex flex-wrap justify-center gap-2 p-4 bg-white/60 z-10 backdrop-blur-md">
         {seasonOrder.map((s, idx) => (
           <button
             key={s}
@@ -117,7 +117,7 @@ const PageClient = () => {
       </div>
 
       {/* محتوای اصلی */}
-      <div className="relative z-20 h-full w-full flex flex-col md:flex-row items-center justify-center gap-6 p-4">
+      <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center">
         <div className="space-y-4">
           <SeasonCard
             season={season}

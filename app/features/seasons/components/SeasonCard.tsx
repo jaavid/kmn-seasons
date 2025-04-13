@@ -50,8 +50,9 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     >
       <div className="relative z-10">
         <div className="space-y-4">
-          {yearPairs.map((pair, index) => (
-            <div key={index} className="grid grid-cols-2 gap-4">
+          {yearPairs.map((pair, index) => (            
+            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
               {pair.map((year) => {
                 if (!year) return null;
                 const yearData = data.filter((stat) => stat.year === year);

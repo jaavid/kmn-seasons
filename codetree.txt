@@ -26,6 +26,10 @@ app/
     constants.ts
   pages/
     SeasonsPage.tsx
+  types/
+    index.ts
+    post.ts
+    season.ts
   globals.css
   layout.tsx
   page.tsx
@@ -99,7 +103,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload dist repository
-          path: './docs'
+          path: './out'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
@@ -110,7 +114,7 @@ File: app/components/charts/YearRow.tsx
 // components/YearRow.tsx
 import React from 'react';
 import BubbleCircle from '@/components/ui/BubbleCircle';
-import { SeasonStats } from '@/features/seasons/utils/transformSeasonStats';
+import { SeasonStats } from '@/types/season';
 
 type YearRowProps = {
   year: string;
@@ -165,7 +169,7 @@ File: app/components/ui/BubbleCircle.tsx
 ================
 import React from 'react';
 import { normalize } from '@/features/seasons/utils/normalizeBubbleSize';
-import { SeasonStats } from '@/features/seasons/utils/transformSeasonStats';
+import { SeasonStats } from '@/types/season';
 
 type BubbleCircleProps = {
   stat: SeasonStats;
@@ -252,7 +256,7 @@ File: app/features/seasons/components/SeasonCard.tsx
 // components/SeasonCard.tsx
 import React from "react";
 import YearRow from "@/components/charts/YearRow";
-import { SeasonStats } from "@/features/seasons/utils/transformSeasonStats";
+import { SeasonStats } from '@/types/season';
 
 type SeasonCardProps = {
   season: string;
@@ -495,9 +499,10 @@ File: app/features/seasons/hooks/useSeasonStats.ts
 // app/hooks/useSeasonData.ts
 import { useEffect, useState } from 'react';
 import axios from '@/lib/axios';
+import { SeasonStats } from '@/types';
 
-export const useSeasonData = (season: string) => {
-  const [data, setData] = useState<any[]>([]);
+export const useSeasonStats = () => {
+  const [data, setData] = useState<SeasonStats[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -506,17 +511,28 @@ export const useSeasonData = (season: string) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get('/stats');
-        const filtered = res.data.filter((item: any) => item.season === season);
+        const res = await axios.get('/seasonStats');
+        const filtered = res.data.filter((item: unknown): item is SeasonStats => {
+          return (
+            typeof item === 'object' &&
+            item !== null &&
+            'season' in item &&
+            (item as SeasonStats).season !== undefined
+          );
+        });
         setData(filtered);
-      } catch (err: any) {
-        setError(err.message || 'خطا در دریافت داده');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'خطا در دریافت داده');
+        } else {
+          setError('خطای ناشناخته');
+        }
       }
       setLoading(false);
     };
 
     fetchData();
-  }, [season]);
+  }, []);
 
   return { data, loading, error };
 };
@@ -524,12 +540,12 @@ export const useSeasonData = (season: string) => {
 ================
 File: app/features/seasons/hooks/useTopPosts.ts
 ================
-// app/hooks/useTopPosts.ts
 import { useEffect, useState } from 'react';
 import axios from '@/lib/axios';
+import { Post } from '@/types';
 
 export const useTopPosts = (season: string, year: number) => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -540,8 +556,12 @@ export const useTopPosts = (season: string, year: number) => {
       try {
         const res = await axios.get(`/top/${season}/${year}`);
         setData(res.data);
-      } catch (err: any) {
-        setError(err.message || 'خطا در دریافت داده');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'خطا در دریافت داده');
+        } else {
+          setError('خطای ناشناخته');
+        }
       }
       setLoading(false);
     };
@@ -570,37 +590,46 @@ export const normalize = (
 ================
 File: app/features/seasons/utils/transformSeasonStats.ts
 ================
-// utils/flattenStats.ts
-export type SeasonStats = {
-    season: "spring" | "summer" | "autumn" | "winter";
-    year: string;
-    month: number;
-    posts: number;
-    comments: number;
-    views: number;
-  };
-  
-  export const flattenStats = (data: any): SeasonStats[] => {
-    const stats: SeasonStats[] = [];
-    for (const season in data) {
-      const seasonData = data[season];
-      for (const year in seasonData) {
-        const yearData = seasonData[year];
-        for (const month in yearData) {
-          const stat = yearData[month];
-          stats.push({
-            season: season as "spring" | "summer" | "autumn" | "winter",
-            year,
-            month: parseInt(month, 10),
-            posts: stat.posts,
-            comments: stat.comments,
-            views: stat.views,
-          });
-        }
+import { SeasonStats, SeasonName } from "@/types";
+
+type RawStats = Record<
+  SeasonName,
+  Record<
+    string,
+    Record<
+      string,
+      {
+        posts: number;
+        comments: number;
+        views: number;
+      }
+    >
+  >
+>;
+
+export const flattenStats = (data: RawStats): SeasonStats[] => {
+  const stats: SeasonStats[] = [];
+
+  (Object.keys(data) as SeasonName[]).forEach((season) => {
+    const seasonData = data[season];
+    for (const year in seasonData) {
+      const yearData = seasonData[year];
+      for (const month in yearData) {
+        const stat = yearData[month];
+        stats.push({
+          season,
+          year,
+          month: parseInt(month, 10),
+          posts: stat.posts,
+          comments: stat.comments,
+          views: stat.views,
+        });
       }
     }
-    return stats;
-  };
+  });
+
+  return stats;
+};
 
 ================
 File: app/lib/axios.ts
@@ -633,10 +662,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import SeasonCard from "../features/seasons/components/SeasonCard";
 import { TopSeasonalPosts } from "../features/seasons/components/TopSeasonalPosts";
-import {
-  flattenStats,
-  SeasonStats,
-} from "../features/seasons/utils/transformSeasonStats";
+import {flattenStats} from "../features/seasons/utils/transformSeasonStats";
+import { SeasonStats } from '@/types/season';
 import axios from "@/lib/axios";
 
 const seasonOrder = ["spring", "summer", "autumn", "winter"];
@@ -771,6 +798,37 @@ const PageClient = () => {
 export default PageClient;
 
 ================
+File: app/types/index.ts
+================
+export * from './post';
+export * from './season';
+
+================
+File: app/types/post.ts
+================
+export type Post = {
+    post_id: string;
+    post_title: string;
+    total_views: string;
+    comment_count: string;
+    thumbnail_url: string;
+  };
+
+================
+File: app/types/season.ts
+================
+export type SeasonName = "spring" | "summer" | "autumn" | "winter";
+
+export type SeasonStats = {
+  season: SeasonName;
+  year: string;
+  month: number;
+  posts: number;
+  comments: number;
+  views: number;
+};
+
+================
 File: app/globals.css
 ================
 @import "tailwindcss";
@@ -818,8 +876,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Create Next App",
-  description: "Generated by create next app",
+  title: "فصل‌های خبر در کرمان نو",
+  description: "بر پایه جای | j-ai.ir",
 };
 
 export default function RootLayout({
