@@ -483,7 +483,7 @@ export function TopSeasonalPosts({
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
           >
-            {loading ? "در حال بارگذاری..." : "نمایش سال بعد"}
+            {loading ? "در حال بارگذاری..." : " سال قبل"}
           </button>
         </div>
       )}
@@ -857,24 +857,22 @@ File: app/globals.css
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Vazirmatn, Arial, Helvetica, sans-serif;
 }
 
 ================
 File: app/layout.tsx
 ================
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Vazirmatn } from "next/font/google"; // 👈 اضافه شده
+
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic", "latin"],
+  variable: "--font-vazir",
+  display: "swap",
+  weight: ["400", "700"], // عادی و بولد
 });
 
 export const metadata: Metadata = {
@@ -888,10 +886,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="fa" dir="rtl">
+      <body className={`${vazirmatn.variable} font-vazir antialiased`}>
         {children}
       </body>
     </html>

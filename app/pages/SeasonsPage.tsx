@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import SeasonCard from "../features/seasons/components/SeasonCard";
 import { TopSeasonalPosts } from "../features/seasons/components/TopSeasonalPosts";
-import {flattenStats} from "../features/seasons/utils/transformSeasonStats";
-import { SeasonStats } from '@/types/season';
+import { flattenStats } from "../features/seasons/utils/transformSeasonStats";
+import { SeasonStats } from "@/types/season";
 import axios from "@/lib/axios";
 
 const seasonOrder = ["spring", "summer", "autumn", "winter"];
@@ -74,7 +74,9 @@ const PageClient = () => {
   }
 
   const availableYears = Array.from(
-    new Set(stats.filter((s) => s.season === season).map((s) => parseInt(s.year)))
+    new Set(
+      stats.filter((s) => s.season === season).map((s) => parseInt(s.year))
+    )
   ).sort((a, b) => b - a);
 
   return (
@@ -121,8 +123,10 @@ const PageClient = () => {
       </div>
 
       {/* محتوای اصلی */}
-      <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center">
-        <div className="space-y-4">
+      {/* <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center"> */}
+      <div className="relative z-20 h-full w-full grid gap-6 p-4 overflow-y-auto grid-cols-1 md:grid-cols-2">
+        {/* ستون اول: SeasonCard */}
+        <div className="w-full flex items-center">
           <SeasonCard
             season={season}
             data={seasonData}
@@ -134,8 +138,14 @@ const PageClient = () => {
             maxViews={maxViews}
           />
         </div>
-        <div>          
-          <TopSeasonalPosts season={season} availableYears={availableYears} initialYearCount={1} />
+
+        {/* ستون دوم: TopSeasonalPosts */}
+        <div className="w-full overflow-y-scroll h-full">
+          <TopSeasonalPosts
+            season={season}
+            availableYears={availableYears}
+            initialYearCount={1}
+          />
         </div>
       </div>
     </div>
