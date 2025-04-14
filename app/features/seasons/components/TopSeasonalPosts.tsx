@@ -111,13 +111,6 @@ export function TopSeasonalPosts({
                     >
                       {/* تصویر + تیتر با گرادینت */}
                       <div className="relative">
-                        {/* <Image
-                          src={post.thumbnail_url}
-                          alt={post.post_title}
-                          width={400}
-                          height={160}
-                          className="w-full h-40 object-cover"
-                        /> */}
                         {post.thumbnail_url &&
                         post.thumbnail_url.trim() !== "" ? (
                           <Image
