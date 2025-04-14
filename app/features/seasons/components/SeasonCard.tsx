@@ -3,6 +3,7 @@ import React from "react";
 import YearRow from "@/components/charts/YearRow";
 import { SeasonStats } from "@/types/season";
 import { getSeasonBackground } from "../utils/getSeasonBackground";
+import LegendDots from "@/components/ui/LegendDots";
 
 type SeasonCardProps = {
   season: string;
@@ -64,30 +65,9 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
           ))}
         </div>
       </div>
-      <p className="text-xs text-gray-600 mt-1">
-        <div
-          className={`relative group text-center rounded-full opacity-70 shadow-md col bg-green-300`}
-          style={{ width: 20, height: 20 }}
-        >
-          📰
-        </div>
-
-        <div
-          className={`relative group text-center rounded-full opacity-70 shadow-md col bg-green-500`}
-          style={{ width: 20, height: 20 }}
-        >
-          💬
-        </div>
-
-        <div
-          className={`relative group text-center rounded-full opacity-70 shadow-md col bg-green-700`}
-          style={{ width: 20, height: 20 }}
-        >
-          👁️
-        </div>
-        هر دایره نشان‌دهنده 📰 تعداد خبر، 💬 نظر یا 👁️ بازدید در ماه مورد نظر
-        است. اندازه‌ی دایره متناسب با مقدار است.
-      </p>
+      <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-4 py-2 mt-2 backdrop-blur-sm flex justify-center gap-6 rounded-b-xl">
+        <LegendDots season={season} />
+      </div>
     </div>
   );
 };
