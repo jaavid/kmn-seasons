@@ -8,6 +8,7 @@ import { TopSeasonalPosts } from "../features/seasons/components/TopSeasonalPost
 import { flattenStats } from "../features/seasons/utils/transformSeasonStats";
 import { SeasonStats } from "@/types/season";
 import axios from "@/lib/axios";
+import { getSeasonBackground } from "@/features/seasons/utils/getSeasonBackground";
 
 const seasonOrder = ["spring", "summer", "autumn", "winter"];
 const seasonLabels: Record<string, string> = {
@@ -38,7 +39,6 @@ const PageClient = () => {
 
   const season = seasonOrder[currentSeasonIndex];
   const seasonData = stats.filter((s) => s.season === season);
-
   const postValues = stats.map((s) => s.posts);
   const commentValues = stats.map((s) => s.comments);
   const minPosts = Math.min(...postValues);
@@ -48,7 +48,6 @@ const PageClient = () => {
   const viewValues = stats.map((s) => s.views);
   const minViews = Math.min(...viewValues);
   const maxViews = Math.max(...viewValues);
-
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () =>
       setCurrentSeasonIndex((i) => (i + 1) % seasonOrder.length),
@@ -60,15 +59,6 @@ const PageClient = () => {
     preventScrollOnSwipe: true,
   });
 
-  let backgroundImage = "/seasons/spring.png";
-  if (season === "summer") {
-    backgroundImage = "/seasons/summer.png";
-  } else if (season === "autumn") {
-    backgroundImage = "/seasons/autumn.png";
-  } else if (season === "winter") {
-    backgroundImage = "/seasons/winter.png";
-  }
-
   if (loading) {
     return <div className="text-center py-10">در حال بارگذاری...</div>;
   }
@@ -78,10 +68,8 @@ const PageClient = () => {
       stats.filter((s) => s.season === season).map((s) => parseInt(s.year))
     )
   ).sort((a, b) => b - a);
-
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col relative">
-      {/* لایه‌ی محو و بک‌گراند */}
       <AnimatePresence mode="wait">
         <motion.div
           key={season}
@@ -93,18 +81,14 @@ const PageClient = () => {
           transition={{ duration: 0.8 }}
         >
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+              backgroundImage: `url(${getSeasonBackground(season)})`,
             }}
           ></div>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
         </motion.div>
       </AnimatePresence>
-
-      {/* انتخاب فصل */}
       <div className="flex flex-wrap justify-center gap-2 p-4 bg-white/60 z-10 backdrop-blur-md">
         {seasonOrder.map((s, idx) => (
           <button
@@ -121,11 +105,7 @@ const PageClient = () => {
           </button>
         ))}
       </div>
-
-      {/* محتوای اصلی */}
-      {/* <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center"> */}
       <div className="relative z-20 h-full w-full grid gap-6 p-4 overflow-y-auto grid-cols-1 md:grid-cols-2">
-        {/* ستون اول: SeasonCard */}
         <div className="w-full flex items-center">
           <SeasonCard
             season={season}
@@ -138,8 +118,6 @@ const PageClient = () => {
             maxViews={maxViews}
           />
         </div>
-
-        {/* ستون دوم: TopSeasonalPosts */}
         <div className="w-full overflow-y-scroll h-full">
           <TopSeasonalPosts
             season={season}

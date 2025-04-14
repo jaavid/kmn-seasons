@@ -2,6 +2,7 @@
 import React from "react";
 import YearRow from "@/components/charts/YearRow";
 import { SeasonStats } from '@/types/season';
+import { getSeasonBackground } from "../utils/getSeasonBackground";
 
 type SeasonCardProps = {
   season: string;
@@ -33,26 +34,15 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     yearPairs.push([years[i], years[i + 1]]);
   }
 
-  // مسیر تصاویر بک‌گراند برای هر فصل
-  let backgroundImage = "/seasons/spring.png";
-  if (season === "summer") {
-    backgroundImage = "/seasons/summer.png";
-  } else if (season === "autumn") {
-    backgroundImage = "/seasons/autumn.png";
-  } else if (season === "winter") {
-    backgroundImage = "/seasons/winter.png";
-  }
-
   return (
     <div
-      className="relative p-6 rounded-xl shadow-lg text-white bg-cover bg-center overflow-hidden"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
+      className="relative p-4 rounded-xl shadow-lg text-white bg-cover bg-center overflow-hidden"
+      style={{ backgroundImage: `url(${getSeasonBackground(season)})`, }}
     >
       <div className="relative z-10">
-        <div className="space-y-4">
+        <div className="space-y-2">
           {yearPairs.map((pair, index) => (            
-            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-1">
               {pair.map((year) => {
                 if (!year) return null;
                 const yearData = data.filter((stat) => stat.year === year);

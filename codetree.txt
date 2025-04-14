@@ -16,9 +16,12 @@ app/
         SeasonCard.tsx
         TopSeasonalPosts.tsx
       hooks/
+        usePaginatedSeasonData.ts
         useSeasonStats.ts
+        useTopComments.ts
         useTopPosts.ts
       utils/
+        getSeasonBackground.ts
         normalizeBubbleSize.ts
         transformSeasonStats.ts
   lib/
@@ -45,7 +48,6 @@ next.config.ts
 package.json
 postcss.config.mjs
 README.md
-setup.sh
 tsconfig.json
 
 ================================================================
@@ -114,7 +116,7 @@ File: app/components/charts/YearRow.tsx
 // components/YearRow.tsx
 import React from 'react';
 import BubbleCircle from '@/components/ui/BubbleCircle';
-import { SeasonStats } from '@/types/season';
+import { SeasonStats } from '@/types';
 
 type YearRowProps = {
   year: string;
@@ -169,7 +171,7 @@ File: app/components/ui/BubbleCircle.tsx
 ================
 import React from 'react';
 import { normalize } from '@/features/seasons/utils/normalizeBubbleSize';
-import { SeasonStats } from '@/types/season';
+import { SeasonStats } from '@/types';
 
 type BubbleCircleProps = {
   stat: SeasonStats;
@@ -339,15 +341,11 @@ File: app/features/seasons/components/TopSeasonalPosts.tsx
 ================
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import { useTopComments } from "../hooks/useTopComments";
 
-type Post = {
-  post_id: string;
-  post_title: string;
-  total_views: string;
-  comment_count: string;
-  thumbnail_url: string;
-};
+import Image from "next/image";
+import { Post } from "@/types";
+import axiosInstance from "@/lib/axios";
 
 type DataByYear = {
   [year: number]: Post[];
@@ -368,11 +366,14 @@ export function useTopSeasonalPosts(
     async (year: number) => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
-        );
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const json: Post[] = await res.json();
+        // const res = await fetch(
+        //   `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
+        // );
+        // if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        // const json: Post[] = await res.json();
+
+        const res = await axiosInstance.get(`/top/${season}/${year}`);
+        const json: Post[] = res.data;
         setDataByYear((prev) => ({ ...prev, [year]: json }));
       } catch (err: unknown) {
         const error = err as Error;
@@ -425,54 +426,150 @@ export function TopSeasonalPosts({
 }) {
   const { dataByYear, yearsShown, canLoadMore, loadMore, loading } =
     useTopSeasonalPosts(season, availableYears, initialYearCount);
-
   return (
     <div className="space-y-10">
       {yearsShown.map((year) => {
         const jalaliYear = (year - 621).toLocaleString("fa-IR", {
           useGrouping: false,
         });
+        const { dataByYear: commentsByYear, yearsShown: yearsWithComments } =
+          useTopComments(season, availableYears, initialYearCount);
         return (
-          <div key={year}>
-            <h2 className="text-xl font-bold mb-4">سال {jalaliYear}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {(dataByYear[year] || []).map((post) => {
-                const viewsFormatted = Number(post.total_views).toLocaleString(
-                  "fa-IR"
-                );
-                const commentCount = Number(post.comment_count);
-                const commentsFormatted = commentCount.toLocaleString("fa-IR");
+          <>
+            <div key={`top${year}`}>
+              <h2 className="text-xl font-bold mb-4">سال {jalaliYear}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {(dataByYear[year] || []).map((post) => {
+                  const viewsFormatted = Number(
+                    post.total_views
+                  ).toLocaleString("fa-IR");
 
-                return (
-                  <div
-                    key={post.post_id}
-                    className="relative rounded-2xl overflow-hidden shadow-sm group"
-                  >
-                    <Image
-                      src={post.thumbnail_url}
-                      alt={post.post_title}
-                      width={400}
-                      height={160}
-                      className="w-full h-40 object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white p-3 text-right">
-                      <p className="text-sm font-semibold leading-tight">
-                        {post.post_title}
-                      </p>
+                  return (
+                    <div
+                      key={`top${post.post_id}`}
+                      className="relative rounded-2xl overflow-hidden shadow-md group bg-black flex flex-col justify-between"
+                    >
+                      <a
+                        key={`top${post.post_id}`}
+                        href={`https://kermaneno.ir/k/${post.post_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        {/* تصویر + تیتر با گرادینت */}
+                        <div className="relative">
+                          {post.thumbnail_url &&
+                          post.thumbnail_url.trim() !== "" ? (
+                            <Image
+                              src={post.thumbnail_url}
+                              alt={post.post_title}
+                              width={400}
+                              height={160}
+                              className="w-full h-40 object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-sm">
+                              بدون تصویر
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
+                            {post.post_title}
+                          </div>
+                        </div>
+
+                        {/* جعبه تگ‌ها با بک‌گراند نیمه‌شفاف */}
+                        {Array.isArray(post.post_tags) &&
+                          post.post_tags.length > 0 && (
+                            <div className="p-3 pt-2">
+                              <div className="bg-black/80 rounded-xl p-2 flex flex-wrap gap-1 text-xs">
+                                {post.post_tags
+                                  .slice(0, 3)
+                                  .map((tag, index) => (
+                                    <span
+                                      key={index}
+                                      title={tag}
+                                      className="max-w-[110px] truncate bg-red-700 text-white px-2 py-0.5 rounded-full border border-red-900 cursor-default"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+
+                        <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                          👁️ {viewsFormatted} بازدید
+                        </div>
+                      </a>
                     </div>
-                    <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                      👁️ {viewsFormatted}
-                    </div>
-                    {commentCount > 0 && (
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                        💬 {commentsFormatted}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+                {/* بخش کامنت‌ها */}
+              </div>
             </div>
-          </div>
+            <div key={`comments${year}`}>
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {(commentsByYear[year] || []).slice(0, 4).map((comment) => (
+                  <div
+                    key={`comment-${comment.post_id}`}
+                    // className="p-2 rounded-lg bg-black/80 shadow text-xs"
+                    className="relative rounded-xl overflow-hidden shadow-md group bg-black flex flex-col justify-between"
+                  >
+                    <a
+                      href={`https://kermaneno.ir/k/${comment.post_id}`}
+                      target="_blank"
+                      // className="font-bold block mb-1 text-blue-900 hover:underline"
+                      className="block"
+                    >
+                      <div className="relative">
+                        {comment.thumbnail_url &&
+                        comment.thumbnail_url.trim() !== "" ? (
+                          <Image
+                            src={comment.thumbnail_url}
+                            alt={comment.post_title}
+                            width={400}
+                            height={160}
+                            className="w-full h-40 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-sm">
+                            بدون تصویر
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
+                          {comment.post_title}
+                        </div>
+                      </div>
+
+                      {Array.isArray(comment.post_tags) &&
+                        comment.post_tags.length > 0 && (
+                          <div className="p-3 pt-2">
+                            <div className="bg-black/80 rounded-xl p-2 flex flex-wrap gap-1 text-xs">
+                              {comment.post_tags
+                                .slice(0, 3)
+                                .map((tag, index) => (
+                                  <span
+                                    key={index}
+                                    title={tag}
+                                    className="max-w-[110px] truncate bg-red-700 text-white px-2 py-0.5 rounded-full border border-red-900 cursor-default"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                        💬
+                        {Number(comment.comment_count).toLocaleString("fa-IR")}{" "}
+                        نظر
+                      </div>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         );
       })}
 
@@ -490,6 +587,67 @@ export function TopSeasonalPosts({
     </div>
   );
 }
+
+================
+File: app/features/seasons/hooks/usePaginatedSeasonData.ts
+================
+import { Post } from "@/types";
+import { useCallback, useEffect, useState } from "react";
+
+// hooks/usePaginatedSeasonData.ts
+export function usePaginatedSeasonData(
+    fetchFn: (season: string, year: number) => Promise<Post[]>,
+    season: string,
+    availableYears: number[],
+    initialYearCount: number = 2
+  ) {
+    const [dataByYear, setDataByYear] = useState<{ [year: number]: Post[] }>({});
+    const [currentYearIndex, setCurrentYearIndex] = useState(
+      Math.min(initialYearCount, availableYears.length) - 1
+    );
+    const [loading, setLoading] = useState(false);
+  
+    const fetchDataForYear = useCallback(
+      async (year: number) => {
+        setLoading(true);
+        try {
+          const data = await fetchFn(season, year);
+          setDataByYear((prev: any) => ({ ...prev, [year]: data }));
+        } catch {
+          setDataByYear((prev: any) => ({ ...prev, [year]: [] }));
+        } finally {
+          setLoading(false);
+        }
+      },
+      [season]
+    );
+  
+    useEffect(() => {
+      setDataByYear({});
+      setCurrentYearIndex(Math.min(initialYearCount, availableYears.length) - 1);
+    }, [season, availableYears, initialYearCount]);
+  
+    useEffect(() => {
+      const year = availableYears[currentYearIndex];
+      if (year && !dataByYear[year]) {
+        fetchDataForYear(year);
+      }
+    }, [currentYearIndex, dataByYear, fetchDataForYear, availableYears]);
+  
+    const loadMore = () => {
+      if (currentYearIndex < availableYears.length - 1) {
+        setCurrentYearIndex((prev: number) => prev + 1);
+      }
+    };
+  
+    return {
+      dataByYear,
+      yearsShown: availableYears.slice(0, currentYearIndex + 1),
+      canLoadMore: currentYearIndex < availableYears.length - 1,
+      loadMore,
+      loading,
+    };
+  }
 
 ================
 File: app/features/seasons/hooks/useSeasonStats.ts
@@ -536,6 +694,20 @@ export const useSeasonStats = () => {
 };
 
 ================
+File: app/features/seasons/hooks/useTopComments.ts
+================
+import axios from "@/lib/axios";
+import { usePaginatedSeasonData } from "./usePaginatedSeasonData";
+
+const fetchComments = async (season: string, year: number) => {
+  const res = await axios.get(`/top-comments/${season}/${year}`);
+  return res.data;
+};
+
+export const useTopComments = (season: string, years: number[], count = 2) =>
+  usePaginatedSeasonData(fetchComments, season, years, count);
+
+================
 File: app/features/seasons/hooks/useTopPosts.ts
 ================
 import { useEffect, useState } from 'react';
@@ -569,6 +741,11 @@ export const useTopPosts = (season: string, year: number) => {
 
   return { data, loading, error };
 };
+
+================
+File: app/features/seasons/utils/getSeasonBackground.ts
+================
+export const getSeasonBackground = (season: string) => `/seasons/${season || "spring"}.png`;
 
 ================
 File: app/features/seasons/utils/normalizeBubbleSize.ts
@@ -660,9 +837,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import SeasonCard from "../features/seasons/components/SeasonCard";
 import { TopSeasonalPosts } from "../features/seasons/components/TopSeasonalPosts";
-import {flattenStats} from "../features/seasons/utils/transformSeasonStats";
-import { SeasonStats } from '@/types/season';
+import { flattenStats } from "../features/seasons/utils/transformSeasonStats";
+import { SeasonStats } from "@/types/season";
 import axios from "@/lib/axios";
+import { getSeasonBackground } from "@/features/seasons/utils/getSeasonBackground";
 
 const seasonOrder = ["spring", "summer", "autumn", "winter"];
 const seasonLabels: Record<string, string> = {
@@ -715,21 +893,14 @@ const PageClient = () => {
     preventScrollOnSwipe: true,
   });
 
-  let backgroundImage = "/seasons/spring.png";
-  if (season === "summer") {
-    backgroundImage = "/seasons/summer.png";
-  } else if (season === "autumn") {
-    backgroundImage = "/seasons/autumn.png";
-  } else if (season === "winter") {
-    backgroundImage = "/seasons/winter.png";
-  }
-
   if (loading) {
     return <div className="text-center py-10">در حال بارگذاری...</div>;
   }
 
   const availableYears = Array.from(
-    new Set(stats.filter((s) => s.season === season).map((s) => parseInt(s.year)))
+    new Set(
+      stats.filter((s) => s.season === season).map((s) => parseInt(s.year))
+    )
   ).sort((a, b) => b - a);
 
   return (
@@ -748,7 +919,7 @@ const PageClient = () => {
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `url(${backgroundImage})`,
+              backgroundImage: `url(${getSeasonBackground(season)})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
@@ -776,8 +947,10 @@ const PageClient = () => {
       </div>
 
       {/* محتوای اصلی */}
-      <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center">
-        <div className="space-y-4">
+      {/* <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center"> */}
+      <div className="relative z-20 h-full w-full grid gap-6 p-4 overflow-y-auto grid-cols-1 md:grid-cols-2">
+        {/* ستون اول: SeasonCard */}
+        <div className="w-full flex items-center">
           <SeasonCard
             season={season}
             data={seasonData}
@@ -789,8 +962,14 @@ const PageClient = () => {
             maxViews={maxViews}
           />
         </div>
-        <div>          
-          <TopSeasonalPosts season={season} availableYears={availableYears} initialYearCount={1} />
+
+        {/* ستون دوم: TopSeasonalPosts */}
+        <div className="w-full overflow-y-scroll h-full">
+          <TopSeasonalPosts
+            season={season}
+            availableYears={availableYears}
+            initialYearCount={1}
+          />
         </div>
       </div>
     </div>
@@ -809,12 +988,13 @@ export * from './season';
 File: app/types/post.ts
 ================
 export type Post = {
-    post_id: string;
-    post_title: string;
-    total_views: string;
-    comment_count: string;
-    thumbnail_url: string;
-  };
+  post_id: string;
+  post_title: string;
+  total_views: string;
+  comment_count: string;
+  thumbnail_url: string;
+  post_tags?: string[];
+};
 
 ================
 File: app/types/season.ts
@@ -1057,105 +1237,43 @@ export default config;
 ================
 File: README.md
 ================
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# فصل‌های خبر در کرمان‌نو 📰🌸❄️
 
-## Getting Started
+این پروژه یک **اینفوگرافیک تعاملی و آنلاین** است که آمار اخبار سایت [کرمان‌نو](https://kermaneno.ir) را به تفکیک **فصل**، **سال** و **ماه** نمایش می‌دهد. با طراحی زیبا و ریسپانسیو، کاربران می‌توانند مشاهده کنند که در چه زمان‌هایی، اخبار بیشتری منتشر شده یا بازخورد بیشتری گرفته است.
 
-First, run the development server:
+## 🔗 نسخه آنلاین
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+پروژه به‌صورت کامل روی **GitHub Pages** دیپلوی شده و از طریق زیر در دسترس است:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+🌐 [seasons.kermaneno.ir](https://seasons.kermaneno.ir)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧠 ایده و اهداف
 
-## Learn More
+این پروژه برای:
+- نمایش آماری وضعیت تولید محتوای فصلی کرمان‌نو
+- کمک به دبیران و سردبیران برای برنامه‌ریزی بهتر در فصول مختلف
+- تحلیل رفتار مخاطبان در بازدید و کامنت‌گذاری
 
-To learn more about Next.js, take a look at the following resources:
+طراحی شده است.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 تکنولوژی‌ها
 
-## Deploy on Vercel
+- **Next.js 15** با قابلیت `app/` routing
+- **TypeScript**
+- **TailwindCSS**
+- **Framer Motion** برای انیمیشن‌ها
+- **React Swipeable** برای سوایپ در موبایل
+- **GitHub Pages** برای دیپلوی استاتیک
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-================
-File: setup.sh
-================
-#!/bin/bash
-
-echo "📁 در حال ساخت ساختار جدید پروژه..."
-
-# پوشه‌های اصلی
-mkdir -p app/pages
-mkdir -p app/features/seasons/{hooks,components,utils,api}
-mkdir -p app/components/ui
-mkdir -p app/components/charts
-mkdir -p app/lib
-mkdir -p app/styles
-
-# انتقال فایل‌ها (اختیاری: می‌تونی دستی انجام بدی)
-echo "🔄 انتقال فایل‌های موجود (اگر مایل بودی)..."
-
-# فایل‌هایی که باید منتقل بشن (اگر هستن)
-FILES_TO_MOVE=(
-  "app/hooks/useSeasonData.ts:app/features/seasons/hooks/useSeasonStats.ts"
-  "app/hooks/useTopPosts.ts:app/features/seasons/hooks/useTopPosts.ts"
-  "app/utils/flattenStats.ts:app/features/seasons/utils/transformSeasonStats.ts"
-  "app/utils/normalize.ts:app/features/seasons/utils/normalizeBubbleSize.ts"
-  "app/components/SeasonCard.tsx:app/features/seasons/components/SeasonCard.tsx"
-  "app/components/TopSeasonalPosts.tsx:app/features/seasons/components/TopSeasonalPosts.tsx"
-  "app/components/BubbleCircle.tsx:app/components/ui/BubbleCircle.tsx"
-  "app/components/YearRow.tsx:app/components/charts/YearRow.tsx"
-  "app/PageClient.tsx:app/pages/SeasonsPage.tsx"
-)
-
-for entry in "${FILES_TO_MOVE[@]}"; do
-  IFS=":" read -r src dst <<< "$entry"
-  if [ -f "$src" ]; then
-    mkdir -p "$(dirname "$dst")"
-    mv "$src" "$dst"
-    echo "✅ انتقال $src به $dst"
-  fi
-done
-
-# ساخت فایل axios
-cat > app/lib/axios.ts <<EOF
-import axios from 'axios';
-import { API_BASE_URL } from './constants';
-
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-export default axiosInstance;
-EOF
-
-# ساخت فایل constants
-cat > app/lib/constants.ts <<EOF
-export const API_BASE_URL = 'https://kermaneno.ir/wp-json/seasons/v1';
-EOF
-
-echo "✅ ساختار جدید با موفقیت ساخته شد!"
+## ✍️ توسعه‌دهنده
+پروژه با ❤️ توسط جاوید مومنی برای تحریریه کرمان‌نو طراحی و پیاده‌سازی شده است.
 
 ================
 File: tsconfig.json
