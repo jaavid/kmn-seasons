@@ -47,7 +47,7 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
           style={{ width: postSize, height: postSize }}
         >
           <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-            {stat.posts.toLocaleString("fa-IR")} خبر
+            📰 {stat.posts.toLocaleString("fa-IR")} خبر
           </div>
         </div>
       )}
@@ -59,7 +59,7 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
           style={{ width: commentSize, height: commentSize }}
         >
           <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-            {stat.comments.toLocaleString("fa-IR")} نظر
+          💬 {stat.comments.toLocaleString("fa-IR")} نظر
           </div>
         </div>
       )}
@@ -71,7 +71,7 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
           style={{ width: viewSize, height: viewSize }}
         >
           <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-            {stat.views.toLocaleString("fa-IR")} مشاهده
+          👁️ {stat.views.toLocaleString("fa-IR")} مشاهده
           </div>
         </div>
       )}

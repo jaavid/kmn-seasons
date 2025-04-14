@@ -10,6 +10,7 @@ app/
       YearRow.tsx
     ui/
       BubbleCircle.tsx
+      PostCard.tsx
   features/
     seasons/
       components/
@@ -20,6 +21,7 @@ app/
         useSeasonStats.ts
         useTopComments.ts
         useTopPosts.ts
+        useTopSeasonalPosts.ts
       utils/
         getSeasonBackground.ts
         normalizeBubbleSize.ts
@@ -253,12 +255,89 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
 export default BubbleCircle;
 
 ================
+File: app/components/ui/PostCard.tsx
+================
+import React from "react";
+import Image from "next/image";
+import { Post } from "@/types";
+
+type PostCardProps = {
+  post: Post;
+  type?: "view" | "comment";
+};
+
+const PostCard: React.FC<PostCardProps> = ({ post, type = "view" }) => {
+  const formattedValue = Number(
+    type === "view" ? post.total_views : post.comment_count
+  ).toLocaleString("fa-IR");
+
+  return (
+    <div className="relative rounded-md overflow-hidden shadow-md group bg-black flex flex-col justify-between">
+      <a
+        href={`https://kermaneno.ir/k/${post.post_id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block"
+      >
+        {/* تصویر + تیتر */}
+        <div className="relative">
+          {post.thumbnail_url && post.thumbnail_url.trim() !== "" ? (
+            <Image
+              src={post.thumbnail_url}
+              alt={post.post_title}
+              width={400}
+              height={160}
+              className="w-full h-40 object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-sm">
+              بدون تصویر
+            </div>
+          )}
+          <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
+            {post.post_title}
+          </div>
+        </div>
+
+        {/* تگ‌ها */}
+        {Array.isArray(post.post_tags) && post.post_tags.length > 0 && (
+          
+            <div className="pr-2 pb-2 flex flex-wrap gap-1 text-xs">
+              {post.post_tags.slice(0, 3).map((tag, index) => (
+                <span
+                  key={index}
+                  title={tag}
+                  className="max-w-[110px] rounded-md truncate bg-red-700 text-white px-2 py-0.5 border border-red-900 cursor-default"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          
+        )}
+
+        <div
+          className={`absolute top-2 ${
+            type === "view" ? "left-2" : "right-2"
+          } bg-black/60 text-white text-xs px-2 py-1 rounded-full`}
+        >
+          {type === "view" ? "👁️" : "💬"} {formattedValue} {type === "view" ? "بازدید" : "نظر"}
+        </div>
+      </a>
+    </div>
+  );
+};
+
+export default PostCard;
+
+================
 File: app/features/seasons/components/SeasonCard.tsx
 ================
 // components/SeasonCard.tsx
 import React from "react";
 import YearRow from "@/components/charts/YearRow";
 import { SeasonStats } from '@/types/season';
+import { getSeasonBackground } from "../utils/getSeasonBackground";
 
 type SeasonCardProps = {
   season: string;
@@ -290,26 +369,15 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
     yearPairs.push([years[i], years[i + 1]]);
   }
 
-  // مسیر تصاویر بک‌گراند برای هر فصل
-  let backgroundImage = "/seasons/spring.png";
-  if (season === "summer") {
-    backgroundImage = "/seasons/summer.png";
-  } else if (season === "autumn") {
-    backgroundImage = "/seasons/autumn.png";
-  } else if (season === "winter") {
-    backgroundImage = "/seasons/winter.png";
-  }
-
   return (
     <div
-      className="relative p-6 rounded-xl shadow-lg text-white bg-cover bg-center overflow-hidden"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
+      className="relative p-4 rounded-xl shadow-lg text-white bg-cover bg-center overflow-hidden"
+      style={{ backgroundImage: `url(${getSeasonBackground(season)})`, }}
     >
       <div className="relative z-10">
-        <div className="space-y-4">
+        <div className="space-y-2">
           {yearPairs.map((pair, index) => (            
-            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-1">
               {pair.map((year) => {
                 if (!year) return null;
                 const yearData = data.filter((stat) => stat.year === year);
@@ -339,81 +407,10 @@ export default SeasonCard;
 ================
 File: app/features/seasons/components/TopSeasonalPosts.tsx
 ================
-"use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import { useTopComments } from "../hooks/useTopComments";
-
-import Image from "next/image";
-import { Post } from "@/types";
-import axiosInstance from "@/lib/axios";
-
-type DataByYear = {
-  [year: number]: Post[];
-};
-
-export function useTopSeasonalPosts(
-  season: string,
-  availableYears: number[],
-  initialYearCount: number = 2
-) {
-  const [dataByYear, setDataByYear] = useState<DataByYear>({});
-  const [currentYearIndex, setCurrentYearIndex] = useState<number>(
-    Math.min(initialYearCount, availableYears.length) - 1
-  );
-  const [loading, setLoading] = useState<boolean>(false);
-
-  const fetchDataForYear = useCallback(
-    async (year: number) => {
-      setLoading(true);
-      try {
-        // const res = await fetch(
-        //   `https://kermaneno.ir/wp-json/seasons/v1/top/${season}/${year}`
-        // );
-        // if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        // const json: Post[] = await res.json();
-
-        const res = await axiosInstance.get(`/top/${season}/${year}`);
-        const json: Post[] = res.data;
-        setDataByYear((prev) => ({ ...prev, [year]: json }));
-      } catch (err: unknown) {
-        const error = err as Error;
-        console.error("Error fetching data:", error.message);
-        setDataByYear((prev) => ({ ...prev, [year]: [] }));
-      }
-      setLoading(false);
-    },
-    [season]
-  );
-
-  // Reset on season change
-  useEffect(() => {
-    setDataByYear({});
-    setCurrentYearIndex(Math.min(initialYearCount, availableYears.length) - 1);
-  }, [season, availableYears, initialYearCount]);
-
-  useEffect(() => {
-    if (currentYearIndex < availableYears.length) {
-      const year = availableYears[currentYearIndex];
-      if (!dataByYear[year]) {
-        fetchDataForYear(year);
-      }
-    }
-  }, [currentYearIndex, dataByYear, fetchDataForYear, availableYears]);
-
-  const loadMore = () => {
-    if (currentYearIndex < availableYears.length - 1) {
-      setCurrentYearIndex((prev) => prev + 1);
-    }
-  };
-
-  return {
-    dataByYear,
-    yearsShown: availableYears.slice(0, currentYearIndex + 1),
-    canLoadMore: currentYearIndex < availableYears.length - 1,
-    loadMore,
-    loading,
-  };
-}
+import { useTopSeasonalPosts } from "../hooks/useTopSeasonalPosts";
+import PostCard from "@/components/ui/PostCard";
 
 export function TopSeasonalPosts({
   season,
@@ -424,152 +421,42 @@ export function TopSeasonalPosts({
   availableYears: number[];
   initialYearCount?: number;
 }) {
-  const { dataByYear, yearsShown, canLoadMore, loadMore, loading } =
-    useTopSeasonalPosts(season, availableYears, initialYearCount);
+  const {
+    dataByYear: topPostsByYear,
+    yearsShown,
+    canLoadMore,
+    loadMore,
+    loading,
+  } = useTopSeasonalPosts(season, availableYears, initialYearCount);
+
+  const { dataByYear: topCommentsByYear } = useTopComments(
+    season,
+    availableYears,
+    initialYearCount
+  );
+
   return (
     <div className="space-y-10">
       {yearsShown.map((year) => {
         const jalaliYear = (year - 621).toLocaleString("fa-IR", {
           useGrouping: false,
         });
-        const { dataByYear: commentsByYear, yearsShown: yearsWithComments } =
-          useTopComments(season, availableYears, initialYearCount);
         return (
-          <>
-            <div key={`top${year}`}>
-              <h2 className="text-xl font-bold mb-4">سال {jalaliYear}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {(dataByYear[year] || []).map((post) => {
-                  const viewsFormatted = Number(
-                    post.total_views
-                  ).toLocaleString("fa-IR");
-
-                  return (
-                    <div
-                      key={`top${post.post_id}`}
-                      className="relative rounded-2xl overflow-hidden shadow-md group bg-black flex flex-col justify-between"
-                    >
-                      <a
-                        key={`top${post.post_id}`}
-                        href={`https://kermaneno.ir/k/${post.post_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
-                      >
-                        {/* تصویر + تیتر با گرادینت */}
-                        <div className="relative">
-                          {post.thumbnail_url &&
-                          post.thumbnail_url.trim() !== "" ? (
-                            <Image
-                              src={post.thumbnail_url}
-                              alt={post.post_title}
-                              width={400}
-                              height={160}
-                              className="w-full h-40 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-sm">
-                              بدون تصویر
-                            </div>
-                          )}
-                          <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
-                            {post.post_title}
-                          </div>
-                        </div>
-
-                        {/* جعبه تگ‌ها با بک‌گراند نیمه‌شفاف */}
-                        {Array.isArray(post.post_tags) &&
-                          post.post_tags.length > 0 && (
-                            <div className="p-3 pt-2">
-                              <div className="bg-black/80 rounded-xl p-2 flex flex-wrap gap-1 text-xs">
-                                {post.post_tags
-                                  .slice(0, 3)
-                                  .map((tag, index) => (
-                                    <span
-                                      key={index}
-                                      title={tag}
-                                      className="max-w-[110px] truncate bg-red-700 text-white px-2 py-0.5 rounded-full border border-red-900 cursor-default"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                              </div>
-                            </div>
-                          )}
-
-                        <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                          👁️ {viewsFormatted} بازدید
-                        </div>
-                      </a>
-                    </div>
-                  );
-                })}
-                {/* بخش کامنت‌ها */}
-              </div>
+          <React.Fragment key={year}>
+            <h2 className="text-3xl text-center font-bold mb-4">سال {jalaliYear}</h2>
+            {loading ? "" : <h4 className="text-xl font-bold mb-4"> برای شما نوشتیم</h4>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {(topPostsByYear[year] || []).map((post) => (
+                <PostCard key={post.post_id} post={post} type="view" />
+              ))}
             </div>
-            <div key={`comments${year}`}>
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {(commentsByYear[year] || []).slice(0, 4).map((comment) => (
-                  <div
-                    key={`comment-${comment.post_id}`}
-                    // className="p-2 rounded-lg bg-black/80 shadow text-xs"
-                    className="relative rounded-xl overflow-hidden shadow-md group bg-black flex flex-col justify-between"
-                  >
-                    <a
-                      href={`https://kermaneno.ir/k/${comment.post_id}`}
-                      target="_blank"
-                      // className="font-bold block mb-1 text-blue-900 hover:underline"
-                      className="block"
-                    >
-                      <div className="relative">
-                        {comment.thumbnail_url &&
-                        comment.thumbnail_url.trim() !== "" ? (
-                          <Image
-                            src={comment.thumbnail_url}
-                            alt={comment.post_title}
-                            width={400}
-                            height={160}
-                            className="w-full h-40 object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-sm">
-                            بدون تصویر
-                          </div>
-                        )}
-                        <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
-                          {comment.post_title}
-                        </div>
-                      </div>
-
-                      {Array.isArray(comment.post_tags) &&
-                        comment.post_tags.length > 0 && (
-                          <div className="p-3 pt-2">
-                            <div className="bg-black/80 rounded-xl p-2 flex flex-wrap gap-1 text-xs">
-                              {comment.post_tags
-                                .slice(0, 3)
-                                .map((tag, index) => (
-                                  <span
-                                    key={index}
-                                    title={tag}
-                                    className="max-w-[110px] truncate bg-red-700 text-white px-2 py-0.5 rounded-full border border-red-900 cursor-default"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                        💬
-                        {Number(comment.comment_count).toLocaleString("fa-IR")}{" "}
-                        نظر
-                      </div>
-                    </a>
-                  </div>
-                ))}
-              </div>
+            {loading ? "" : <h4 className="text-xl font-bold mb-4"> برای ما نوشتید</h4>}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {(topCommentsByYear[year] || []).slice(0, 4).map((post) => (
+                <PostCard key={post.post_id} post={post} type="comment" />
+              ))}
             </div>
-          </>
+          </React.Fragment>
         );
       })}
 
@@ -580,7 +467,7 @@ export function TopSeasonalPosts({
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
           >
-            {loading ? "در حال بارگذاری..." : " سال قبل"}
+            {loading ? "در حال بارگذاری..." : "سال قبل"}
           </button>
         </div>
       )}
@@ -592,62 +479,61 @@ export function TopSeasonalPosts({
 File: app/features/seasons/hooks/usePaginatedSeasonData.ts
 ================
 import { Post } from "@/types";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-// hooks/usePaginatedSeasonData.ts
 export function usePaginatedSeasonData(
-    fetchFn: (season: string, year: number) => Promise<Post[]>,
-    season: string,
-    availableYears: number[],
-    initialYearCount: number = 2
-  ) {
-    const [dataByYear, setDataByYear] = useState<{ [year: number]: Post[] }>({});
-    const [currentYearIndex, setCurrentYearIndex] = useState(
-      Math.min(initialYearCount, availableYears.length) - 1
-    );
-    const [loading, setLoading] = useState(false);
-  
-    const fetchDataForYear = useCallback(
-      async (year: number) => {
-        setLoading(true);
-        try {
-          const data = await fetchFn(season, year);
-          setDataByYear((prev: any) => ({ ...prev, [year]: data }));
-        } catch {
-          setDataByYear((prev: any) => ({ ...prev, [year]: [] }));
-        } finally {
-          setLoading(false);
-        }
-      },
-      [season]
-    );
-  
-    useEffect(() => {
-      setDataByYear({});
-      setCurrentYearIndex(Math.min(initialYearCount, availableYears.length) - 1);
-    }, [season, availableYears, initialYearCount]);
-  
-    useEffect(() => {
-      const year = availableYears[currentYearIndex];
-      if (year && !dataByYear[year]) {
-        fetchDataForYear(year);
+  fetchFn: (season: string, year: number) => Promise<Post[]>,
+  season: string,
+  availableYears: number[],
+  initialYearCount: number = 2
+) {
+  const [dataByYear, setDataByYear] = useState<Record<number, Post[]>>({});
+  const [currentYearIndex, setCurrentYearIndex] = useState(
+    Math.min(initialYearCount, availableYears.length) - 1
+  );
+  const [loading, setLoading] = useState(false);
+
+  const fetchDataForYear = useCallback(
+    async (year: number) => {
+      setLoading(true);
+      try {
+        const data = await fetchFn(season, year);
+        setDataByYear((prev: Record<number, Post[]>) => ({ ...prev, [year]: data }));
+      } catch {
+        setDataByYear((prev: Record<number, Post[]>) => ({ ...prev, [year]: [] }));
+      } finally {
+        setLoading(false);
       }
-    }, [currentYearIndex, dataByYear, fetchDataForYear, availableYears]);
-  
-    const loadMore = () => {
-      if (currentYearIndex < availableYears.length - 1) {
-        setCurrentYearIndex((prev: number) => prev + 1);
-      }
-    };
-  
-    return {
-      dataByYear,
-      yearsShown: availableYears.slice(0, currentYearIndex + 1),
-      canLoadMore: currentYearIndex < availableYears.length - 1,
-      loadMore,
-      loading,
-    };
-  }
+    },
+    [fetchFn, season]
+  );
+
+  useEffect(() => {
+    setDataByYear({});
+    setCurrentYearIndex(Math.min(initialYearCount, availableYears.length) - 1);
+  }, [season, availableYears, initialYearCount]);
+
+  useEffect(() => {
+    const year = availableYears[currentYearIndex];
+    if (year && !dataByYear[year]) {
+      fetchDataForYear(year);
+    }
+  }, [currentYearIndex, dataByYear, fetchDataForYear, availableYears]);
+
+  const loadMore = () => {
+    if (currentYearIndex < availableYears.length - 1) {
+      setCurrentYearIndex((prev: number) => prev + 1);
+    }
+  };
+
+  return {
+    dataByYear,
+    yearsShown: availableYears.slice(0, currentYearIndex + 1),
+    canLoadMore: currentYearIndex < availableYears.length - 1,
+    loadMore,
+    loading,
+  };
+}
 
 ================
 File: app/features/seasons/hooks/useSeasonStats.ts
@@ -741,6 +627,20 @@ export const useTopPosts = (season: string, year: number) => {
 
   return { data, loading, error };
 };
+
+================
+File: app/features/seasons/hooks/useTopSeasonalPosts.ts
+================
+import axios from "@/lib/axios";
+import { usePaginatedSeasonData } from "./usePaginatedSeasonData";
+
+const fetchTops = async (season: string, year: number) => {
+  const res = await axios.get(`/top/${season}/${year}`);
+  return res.data;
+};
+
+export const useTopSeasonalPosts = (season: string, years: number[], count = 2) =>
+  usePaginatedSeasonData(fetchTops, season, years, count);
 
 ================
 File: app/features/seasons/utils/getSeasonBackground.ts
@@ -871,7 +771,6 @@ const PageClient = () => {
 
   const season = seasonOrder[currentSeasonIndex];
   const seasonData = stats.filter((s) => s.season === season);
-
   const postValues = stats.map((s) => s.posts);
   const commentValues = stats.map((s) => s.comments);
   const minPosts = Math.min(...postValues);
@@ -881,7 +780,6 @@ const PageClient = () => {
   const viewValues = stats.map((s) => s.views);
   const minViews = Math.min(...viewValues);
   const maxViews = Math.max(...viewValues);
-
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () =>
       setCurrentSeasonIndex((i) => (i + 1) % seasonOrder.length),
@@ -902,10 +800,8 @@ const PageClient = () => {
       stats.filter((s) => s.season === season).map((s) => parseInt(s.year))
     )
   ).sort((a, b) => b - a);
-
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col relative">
-      {/* لایه‌ی محو و بک‌گراند */}
       <AnimatePresence mode="wait">
         <motion.div
           key={season}
@@ -917,18 +813,14 @@ const PageClient = () => {
           transition={{ duration: 0.8 }}
         >
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage: `url(${getSeasonBackground(season)})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
             }}
           ></div>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
         </motion.div>
       </AnimatePresence>
-
-      {/* انتخاب فصل */}
       <div className="flex flex-wrap justify-center gap-2 p-4 bg-white/60 z-10 backdrop-blur-md">
         {seasonOrder.map((s, idx) => (
           <button
@@ -945,11 +837,7 @@ const PageClient = () => {
           </button>
         ))}
       </div>
-
-      {/* محتوای اصلی */}
-      {/* <div className="relative z-20 h-full w-full flex flex-col gap-6 p-4 overflow-y-auto md:flex-row md:items-center md:justify-center"> */}
       <div className="relative z-20 h-full w-full grid gap-6 p-4 overflow-y-auto grid-cols-1 md:grid-cols-2">
-        {/* ستون اول: SeasonCard */}
         <div className="w-full flex items-center">
           <SeasonCard
             season={season}
@@ -962,8 +850,6 @@ const PageClient = () => {
             maxViews={maxViews}
           />
         </div>
-
-        {/* ستون دوم: TopSeasonalPosts */}
         <div className="w-full overflow-y-scroll h-full">
           <TopSeasonalPosts
             season={season}
