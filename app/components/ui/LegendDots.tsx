@@ -1,4 +1,5 @@
 import React from 'react';
+import { seasonBackgroundDescriptions } from '@/features/seasons/utils/seasonMeta';
 
 const seasonColors: Record<string, { post: string; comment: string; view: string }> = {
   spring: { post: 'bg-green-300', comment: 'bg-green-500', view: 'bg-green-700' },
@@ -9,6 +10,7 @@ const seasonColors: Record<string, { post: string; comment: string; view: string
 
 const LegendDots = ({ season }: { season: string }) => {
   const colors = seasonColors[season] || seasonColors.spring;
+  const desc = seasonBackgroundDescriptions[season] || '';
 
   const items = [
     { label: 'خبر', className: colors.post },
@@ -17,13 +19,19 @@ const LegendDots = ({ season }: { season: string }) => {
   ];
 
   return (
-    <div className="flex gap-4 items-center">
-      {items.map((item, index) => (
-        <div key={index} className="flex items-center gap-1">
-          <div className={`w-3 h-3 rounded-full ${item.className}`}></div>
-          <span>{item.label}</span>
-        </div>
-      ))}
+    <div className="flex justify-between w-full items-center flex-wrap gap-4">
+      {/* توضیح پس‌زمینه */}
+      <div className="text-white text-xs whitespace-nowrap">{desc}</div>
+
+      {/* راهنمای دایره‌ها */}
+      <div className="flex gap-4 items-center">
+        {items.map((item, index) => (
+          <div key={index} className="flex items-center gap-1">
+            <div className={`w-3 h-3 rounded-full ${item.className}`}></div>
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

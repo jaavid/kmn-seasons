@@ -65,7 +65,7 @@ const SeasonCard: React.FC<SeasonCardProps> = ({
           ))}
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-4 py-2 mt-2 backdrop-blur-sm flex justify-center gap-6 rounded-b-xl">
+      <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-4 py-2 backdrop-blur-sm rounded-b-xl">
         <LegendDots season={season} />
       </div>
     </div>
