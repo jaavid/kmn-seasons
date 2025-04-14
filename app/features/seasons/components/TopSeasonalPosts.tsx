@@ -1,14 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-
-type Post = {
-  post_id: string;
-  post_title: string;
-  total_views: string;
-  comment_count: string;
-  thumbnail_url: string;
-};
+import { Post } from "@/types";
 
 type DataByYear = {
   [year: number]: Post[];
@@ -107,28 +100,57 @@ export function TopSeasonalPosts({
                 return (
                   <div
                     key={post.post_id}
-                    className="relative rounded-2xl overflow-hidden shadow-sm group"
+                    className="relative rounded-2xl overflow-hidden shadow-md group bg-black flex flex-col justify-between"
                   >
-                    <Image
-                      src={post.thumbnail_url}
-                      alt={post.post_title}
-                      width={400}
-                      height={160}
-                      className="w-full h-40 object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white p-3 text-right">
-                      <p className="text-sm font-semibold leading-tight">
-                        {post.post_title}
-                      </p>
-                    </div>
-                    <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                      👁️ {viewsFormatted}
-                    </div>
-                    {commentCount > 0 && (
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                        💬 {commentsFormatted}
+                    <a
+                      key={post.post_id}
+                      href={`https://kermaneno.ir/k/${post.post_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      {/* تصویر + تیتر با گرادینت */}
+                      <div className="relative">
+                        <Image
+                          src={post.thumbnail_url}
+                          alt={post.post_title}
+                          width={400}
+                          height={160}
+                          className="w-full h-40 object-cover"
+                        />
+                        <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
+                          {post.post_title}
+                        </div>
                       </div>
-                    )}
+
+                      {/* جعبه تگ‌ها با بک‌گراند نیمه‌شفاف */}
+                      {Array.isArray(post.post_tags) &&
+                        post.post_tags.length > 0 && (
+                          <div className="p-3 pt-2">
+                            <div className="bg-black/80 rounded-xl p-2 flex flex-wrap gap-1 text-xs">
+                              {post.post_tags.slice(0, 3).map((tag, index) => (
+                                <span
+                                  key={index}
+                                  title={tag}
+                                  className="max-w-[110px] truncate bg-red-700 text-white px-2 py-0.5 rounded-full border border-red-900 cursor-default"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* آمار بازدید و نظر */}
+                      <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                        👁️ {viewsFormatted}
+                      </div>
+                      {commentCount > 0 && (
+                        <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                          💬 {commentsFormatted}
+                        </div>
+                      )}
+                    </a>
                   </div>
                 );
               })}

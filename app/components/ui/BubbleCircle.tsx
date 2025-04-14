@@ -1,6 +1,6 @@
 import React from 'react';
 import { normalize } from '@/features/seasons/utils/normalizeBubbleSize';
-import { SeasonStats } from '@/types/season';
+import { SeasonStats } from '@/types';
 
 type BubbleCircleProps = {
   stat: SeasonStats;
