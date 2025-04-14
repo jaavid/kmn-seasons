@@ -111,13 +111,27 @@ export function TopSeasonalPosts({
                     >
                       {/* تصویر + تیتر با گرادینت */}
                       <div className="relative">
-                        <Image
+                        {/* <Image
                           src={post.thumbnail_url}
                           alt={post.post_title}
                           width={400}
                           height={160}
                           className="w-full h-40 object-cover"
-                        />
+                        /> */}
+                        {post.thumbnail_url &&
+                        post.thumbnail_url.trim() !== "" ? (
+                          <Image
+                            src={post.thumbnail_url}
+                            alt={post.post_title}
+                            width={400}
+                          height={160}
+                            className="w-full h-40 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-sm">
+                            بدون تصویر
+                          </div>
+                        )}
                         <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3 text-sm font-semibold leading-tight text-right">
                           {post.post_title}
                         </div>
