@@ -2,6 +2,7 @@ import React from 'react';
 import { normalize } from '@/features/seasons/utils/normalizeBubbleSize';
 import { SeasonStats } from '@/types';
 import { seasonColors } from '@/features/seasons/utils/seasonColors';
+import { seasonConfig } from '@/features/seasons/utils/seasonConfig';
 
 type BubbleCircleProps = {
   stat: SeasonStats;
@@ -26,11 +27,7 @@ const BubbleCircle: React.FC<BubbleCircleProps> = ({
   const commentSize = normalize(stat.comments, minComments, maxComments);
   const viewSize = normalize(stat.views, minViews, maxViews);
 
-  const colors = seasonColors[stat.season] || {
-    post: 'bg-gray-300',
-    comment: 'bg-gray-500',
-    view: 'bg-gray-700',
-  };
+  const colors = seasonConfig[stat.season]?.colors;
 
   return (
     <div className="flex justify-center gap-2">

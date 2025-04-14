@@ -1,15 +1,16 @@
-import React from 'react';
-import { seasonBackgroundDescriptions } from '@/features/seasons/utils/seasonMeta';
-import { seasonColors } from '@/features/seasons/utils/seasonColors';
+import React from "react";
+
+import { seasonConfig, isSeasonKey, SeasonKey } from '@/features/seasons/utils/seasonConfig';
 
 const LegendDots = ({ season }: { season: string }) => {
-  const colors = seasonColors[season] || seasonColors.spring;
-  const desc = seasonBackgroundDescriptions[season] || '';
+  const typedSeason: SeasonKey = isSeasonKey(season) ? season : 'spring';
+  const colors = seasonConfig[typedSeason].colors;
+  const desc = seasonConfig[typedSeason].description;
 
   const items = [
-    { label: 'خبر', className: colors.post },
-    { label: 'نظر', className: colors.comment },
-    { label: 'بازدید', className: colors.view },
+    { label: "خبر", className: colors.post },
+    { label: "نظر", className: colors.comment },
+    { label: "بازدید", className: colors.view },
   ];
 
   return (
